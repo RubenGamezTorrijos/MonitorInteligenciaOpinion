@@ -220,10 +220,10 @@ print('\\n✅ Pipeline completado exitosamente')
 jupyter notebook
 
 # En el navegador, ejecutar en orden:
-# 1. notebooks/1_scraping.ipynb
-# 2. notebooks/2_preprocesamiento.ipynb
-# 3. notebooks/3_analisis.ipynb
-# 4. notebooks/4_visualizacion.ipynb
+1. notebooks/1_scraping.ipynb
+2. notebooks/2_preprocesamiento.ipynb
+3. notebooks/3_analisis.ipynb
+4. notebooks/4_visualizacion.ipynb
 
 # ✅ Criterios de Verificación Final
 Para confirmar que el proyecto funciona correctamente, verificar:
