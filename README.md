@@ -164,7 +164,6 @@ ls visualizations/
 ```
 🚀 Cómo Ejecutar el Proyecto Completo
 Método 1: Ejecución secuencial (Recomendado para primera vez)
-```
 # 1. Activar entorno virtual
 ```
 source venv/bin/activate  # o venv\Scripts\activate en Windows
@@ -213,8 +212,10 @@ for phase_name, command in phases:
 
 print('\\n✅ Pipeline completado exitosamente')
 ```
-Método 3: Usar Jupyter Notebooks interactivamente
-```
+# Método 3: Usar Jupyter Notebooks interactivamente
+
+---
+
 # Iniciar Jupyter
 jupyter notebook
 
@@ -297,19 +298,21 @@ pip install --upgrade pip setuptools wheel
 # Si hay problemas con NLTK
 ```
 python -m nltk.downloader all
+
 Problema 2: Scraping bloqueado
-```
+
 # Editar scripts/scraper.py y aumentar delays
-```
+
 time.sleep(random.uniform(3, 5))  # En lugar de 1-3
 Problema 3: Memoria insuficiente en notebooks
-```
+
 # Reducir tamaño de dataset
 # En scraping, cambiar pages=2 a pages=1
+
 Problema 4: Caracteres especiales mal codificados
 
 # Asegurar encoding UTF-8
-```
+
 df.to_csv('archivo.csv', index=False, encoding='utf-8-sig')
 ```
 # 📊 Resultados Esperados
