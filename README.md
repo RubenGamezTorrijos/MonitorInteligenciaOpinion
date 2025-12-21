@@ -5,8 +5,8 @@ UEM | Sistemas Inteligentes | Proyecto final: Monitor de Ingeligencia de Opinió
 Sistema completo para analizar opiniones y reseñas de Amazon España mediante técnicas de NLP y visualización de datos.
 
 ## 👥 Equipo
-- **Persona A**: Web Scraping, Análisis de Frecuencia, Coordinación
-- **Persona B**: Preprocesamiento NLP, Visualización, Documentación
+- **Rubén Gámez Torrijos**: Web Scraping, Análisis de Frecuencia, Coordinación
+- **Juán Esteban Torres Carreño**: Preprocesamiento NLP, Visualización, Documentación
 
 ## 🏗️ Estructura del Proyecto
 
