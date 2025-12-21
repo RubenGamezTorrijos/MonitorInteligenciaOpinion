@@ -1,6 +1,6 @@
 # FASE 2: Preprocesamiento y Limpieza (NLP)
-# Pipeline de limpieza: Desarrollado por Persona A
-# Stopwords y estadísticas: Desarrollado por Persona B
+# Pipeline de limpieza: Desarrollado por Rubén
+# Stopwords y estadísticas: Desarrollado por Juanes
 
 import pandas as pd
 import re
@@ -25,7 +25,7 @@ class TextPreprocessor:
             nltk.download('stopwords')
             nltk.download('punkt_tab')
         
-        # Persona B: Investigación de stopwords en español
+        # Juanes: Investigación de stopwords en español
         if language == 'spanish':
             self.stop_words = set(stopwords.words('spanish'))
             self.stemmer = SnowballStemmer('spanish')
@@ -41,14 +41,14 @@ class TextPreprocessor:
         self.stop_words.update(self.custom_stopwords)
         
     def clean_text(self, text: str) -> str:
-        """Limpieza básica (Persona A)"""
+        """Limpieza básica (Rubén)"""
         if not isinstance(text, str):
             return ""
         
         text = text.lower() # minúsculas
         # Eliminar acentos
         text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-        # Eliminar URLs, menciones y hashtags (Persona A)
+        # Eliminar URLs, menciones y hashtags (Rubén)
         text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
         text = re.sub(r'@\w+|#\w+', '', text)
         # Eliminar símbolos y puntuación
@@ -65,18 +65,18 @@ class TextPreprocessor:
         return [token for token in tokens if token not in self.stop_words]
     
     def apply_stemming(self, tokens: List[str]) -> List[str]:
-        """Stemming (Persona B)"""
+        """Stemming (Desarrollado por Juanes)"""
         return [self.stemmer.stem(token) for token in tokens]
     
     def preprocess_pipeline(self, text: str) -> Dict[str, Any]:
-        """Integración de pipeline (Desarrollado por Persona A)"""
-        # 1. Limpieza (Persona A)
+        """Integración de pipeline (Desarrollado por Rubén)"""
+        # 1. Limpieza (Rubén)
         cleaned_text = self.clean_text(text)
         
-        # 2. Tokenización (Persona A)
+        # 2. Tokenización (Rubén)
         tokens = self.tokenize_text(cleaned_text)
         
-        # 3. Eliminación de stopwords (Persona B)
+        # 3. Eliminación de stopwords (Juanes)
         tokens_no_stop = self.remove_stopwords(tokens)
         
         # 4. Resultado final
@@ -95,8 +95,8 @@ class TextPreprocessor:
         }
 
     def calculate_persona_b_metrics(self, df: pd.DataFrame):
-        """Métricas adicionales implementadas por Persona B"""
-        print("Calculando estadísticas avanzadas (Persona B)...")
+        """Métricas adicionales implementadas por Juanes"""
+        print("Calculando estadísticas avanzadas (Juanes)...")
         df['longitud_comentario'] = df['texto_comentario'].str.len()
         df['conteo_palabras_unicas'] = df['texto_limpio'].apply(lambda x: len(set(str(x).split())))
         return df
@@ -111,14 +111,14 @@ def main():
 
     preprocessor = TextPreprocessor(language='spanish')
     
-    # Procesar (Persona A)
+    # Procesar (Rubén)
     print("Aplicando preprocesamiento...")
     results = df['texto_comentario'].apply(preprocessor.preprocess_pipeline)
     df_results = pd.DataFrame(list(results))
     
     df_final = pd.concat([df, df_results], axis=1)
     
-    # Métricas (Persona B)
+    # Métricas (Juanes)
     df_final = preprocessor.calculate_persona_b_metrics(df_final)
     
     output_path = 'data/processed/dataset_clean.csv'

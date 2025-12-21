@@ -6,14 +6,14 @@ Proyecto de análisis de datos textuales a partir de reseñas de Trustpilot sobr
 
 Este proyecto ha sido desarrollado siguiendo un plan de colaboración dividido en dos perfiles:
 
-*   **Persona A (Organizador/Coordinador):**
+*   **Rubén (Organizador/Coordinador):**
     *   Gestión de repositorio y entorno.
     *   Desarrollo del script principal de scraping (`scraper.py`).
     *   Implementación del pipeline de limpieza NLP.
     *   Análisis de frecuencia y sentimiento en Notebooks.
     *   Generación del Informe Final.
 
-*   **Persona B (Colaborador):**
+*   **Juanes (Colaborador):**
     *   Investigación de librerías y estructura HTML.
     *   Creación de funciones auxiliares y validación de datos.
     *   Implementación de métricas estadísticas (longitud, palabras únicas).
@@ -29,8 +29,8 @@ MonitorInteligenciaOpinion/
 │   ├── raw/                # Dataset original (dataset_raw.csv)
 │   └── processed/          # Dataset limpio (dataset_clean.csv)
 ├── scripts/
-│   ├── scraper.py          # Script de extracción (Persona A)
-│   ├── preprocessing.py    # Script de limpieza (Persona A/B)
+│   ├── scraper.py          # Script de extracción (Rubén)
+│   ├── preprocessing.py    # Script de limpieza (Rubén/Juanes)
 │   └── verify_project.py   # Script de validación de calidad
 ├── notebooks/
 │   ├── 1_scraping.ipynb    # Fase 1: Extracción
@@ -38,9 +38,9 @@ MonitorInteligenciaOpinion/
 │   ├── 3_analisis.ipynb    # Fase 3: Valor
 │   └── 4_visualizacion.ipynb # Fase 4: Gráficos
 ├── visualizations/         # Exportación de gráficos e informes
-├── requirements.txt        # Dependencias (Persona B)
-├── INFORME_FINAL.md        # Reporte ejecutivo (Persona A)
-└── README.md               # Instrucciones (Persona B)
+├── requirements.txt        # Dependencias (Juanes)
+├── INFORME_FINAL.md        # Reporte ejecutivo (Rubén)
+└── README.md               # Instrucciones (Juanes)
 ```
 
 ## 🛠️ Instalación y Uso

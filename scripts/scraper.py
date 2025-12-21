@@ -1,6 +1,6 @@
 # FASE 1: Web Scraping
-# Desarrollado por: Persona A (Organizador)
-# Apoyo en funciones auxiliares: Persona B (Colaborador)
+# Desarrollado por: Rubén (Organizador)
+# Apoyo en funciones auxiliares: Juanes (Colaborador)
 
 import requests
 from bs4 import BeautifulSoup
@@ -39,7 +39,7 @@ class TrustpilotScraper:
                 url = f"{company_url}?page={page}"
             
             try:
-                # Petición HTTP con delay aleatorio (Implementado por Persona B para ser ético)
+                # Petición HTTP con delay aleatorio (Implementado por Juanes para ser ético)
                 time.sleep(random.uniform(2, 4))
                 response = requests.get(url, headers=self.headers)
                 response.raise_for_status()
@@ -47,7 +47,7 @@ class TrustpilotScraper:
                 # Parsear HTML
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Encontrar todos los contenedores de reseñas (Persona B: Investigar estructura HTML)
+                # Encontrar todos los contenedores de reseñas (Juanes: Investigar estructura HTML)
                 review_containers = soup.find_all('article')
                 
                 if not review_containers:
@@ -69,7 +69,7 @@ class TrustpilotScraper:
         print(f"\nTotal de reseñas extraídas: {len(self.reviews_data)}")
     
     def extract_review_data(self, review_element):
-        """Extrae los datos individuales de una reseña (Persona A)"""
+        """Extrae los datos individuales de una reseña (Rubén)"""
         try:
             # Extraer texto del comentario (texto_comentario)
             text_div = review_element.find('div', class_=lambda x: x and 'reviewText' in x)
@@ -117,7 +117,7 @@ class TrustpilotScraper:
             return None
     
     def save_to_csv(self, filename='data/raw/dataset_raw.csv'):
-        """Guarda los datos en un archivo CSV (Persona A)"""
+        """Guarda los datos en un archivo CSV (Rubén)"""
         if not self.reviews_data:
             print("No hay datos para guardar")
             return
@@ -135,7 +135,7 @@ def main():
     
     scraper = TrustpilotScraper()
     
-    # Scrapear reseñas (Persona A & B)
+    # Scrapear reseñas (Rubén & Juanes)
     scraper.get_company_reviews(amazon_url, pages=3)
     
     # Guardar datos (Fase 1)

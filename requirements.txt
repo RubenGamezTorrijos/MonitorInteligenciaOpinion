@@ -1,6 +1,6 @@
 # ==========================================
 # Monitor de Inteligencia de Opinión
-# Lista de dependencias (Tarea Persona B)
+# Lista de dependencias (Tarea Juanes)
 # ==========================================
 
 # Core & Data Manipulation

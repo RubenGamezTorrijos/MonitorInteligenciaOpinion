@@ -1,17 +1,18 @@
 # Presentación: Monitor de Inteligencia de Opinión
-**Persona B (Colaborador)**
+**Rubén (Coordinador)**
+**Juanes (Colaborador)**
 
 ## 1. Portada
 *   **Título:** Monitor de Inteligencia de Opinión
 *   **Caso de Estudio:** Reseñas de Amazon en Trustpilot
-*   **Equipo:** Persona A (Coordinador) & Persona B (Colaborador)
+*   **Equipo:** Rubén (Coordinador) & Juanes (Colaborador)
 
 ## 2. Objetivo del Proyecto
 *   Automatizar la escucha activa del cliente.
 *   Extraer "insights" procesables de grandes volúmenes de texto.
 *   Visualizar la salud de la marca en tiempo real.
 
-## 3. Metodología y Herramientas (Persona B)
+## 3. Metodología y Herramientas (Juanes)
 *   **Extracción:** Web Scraping ético con BeautifulSoup.
 *   **NLP:** Tokenización, eliminación de ruidos y stopwords en español con NLTK.
 *   **Sentimiento:** Polaridad y subjetividad con TextBlob.

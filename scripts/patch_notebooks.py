@@ -30,7 +30,7 @@ def patch_notebook(path, replacements):
 
 # Phase 1 Notebook replacements
 patch_notebook('notebooks/1_scraping.ipynb', {
-    'Persona A - Extracción': 'Persona A (Organizador) - Extracción',
+    'Rubén - Extracción': 'Rubén (Organizador) - Extracción',
     'texto': 'texto_comentario',
     'reviews_amazon_raw.csv': 'dataset_raw.csv'
 })
@@ -44,7 +44,7 @@ patch_notebook('notebooks/2_preprocesamiento.ipynb', {
 
 # Phase 3 Notebook replacements
 patch_notebook('notebooks/3_analisis.ipynb', {
-    'Persona A - Análisis': 'Persona A (Organizador) - Análisis',
+    'Rubén - Análisis': 'Rubén (Organizador) - Análisis',
     'dataset_clean.csv': 'dataset_clean.csv',
     'reviews_for_analysis.csv': 'dataset_clean.csv',
     'texto_limpio': 'texto_limpio'
@@ -52,6 +52,6 @@ patch_notebook('notebooks/3_analisis.ipynb', {
 
 # Phase 4 Notebook replacements
 patch_notebook('notebooks/4_visualizacion.ipynb', {
-    'Persona B - Creación': 'Persona B (Colaborador) - Creación',
+    'Juanes - Creación': 'Juanes (Colaborador) - Creación',
     'reviews_with_sentiment.csv': 'reviews_with_sentiment.csv'
 })
