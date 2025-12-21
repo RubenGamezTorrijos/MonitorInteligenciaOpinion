@@ -1,0 +1,32 @@
+{
+  "total_resenas": 140,
+  "polaridad_promedio": -0.02,
+  "subjetividad_promedio": 0.065,
+  "distribucion_sentimientos": {
+    "neutral": 136,
+    "negativo": 4
+  },
+  "top_palabras": {
+    "amazon": 56,
+    "texto": 40,
+    "disponible": 40,
+    "cliente": 26,
+    "atencion": 22,
+    "dias": 22,
+    "entrega": 20,
+    "dicen": 18,
+    "comprado": 16,
+    "producto": 16,
+    "dia": 16,
+    "pedido": 14,
+    "dos": 12,
+    "servicio": 12,
+    "despues": 12,
+    "devolucion": 12,
+    "compre": 12,
+    "compra": 10,
+    "llevo": 10,
+    "paquete": 10
+  },
+  "correlacion_puntuacion_polaridad": 0.05108403372400214
+}

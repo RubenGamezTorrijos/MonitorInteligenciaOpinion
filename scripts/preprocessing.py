@@ -242,7 +242,13 @@ def main():
     """Función principal para probar el preprocesador"""
     # Cargar datos de ejemplo
     print("Cargando datos...")
-    df = pd.read_csv('../data/raw/reviews_amazon_raw.csv')
+    input_path = 'data/raw/reviews_amazon_raw.csv'
+    try:
+        df = pd.read_csv(input_path)
+    except FileNotFoundError:
+        # Intentar con ruta relativa si se ejecuta desde scripts/
+        df = pd.read_csv('../' + input_path)
+
     
     # Mostrar información inicial
     print(f"Dataset cargado: {len(df)} reseñas")
@@ -258,8 +264,13 @@ def main():
     df_processed = preprocessor.calculate_text_metrics(df_processed)
     
     # Guardar dataset procesado
-    output_path = '../data/processed/reviews_preprocessed.csv'
-    df_processed.to_csv(output_path, index=False, encoding='utf-8')
+    output_path = 'data/processed/reviews_preprocessed.csv'
+    try:
+        df_processed.to_csv(output_path, index=False, encoding='utf-8')
+    except OSError:
+        # Intentar con ruta relativa
+        output_path = '../' + output_path
+        df_processed.to_csv(output_path, index=False, encoding='utf-8')
     
     print(f"\nDataset guardado en: {output_path}")
     print(f"Número total de columnas: {len(df_processed.columns)}")

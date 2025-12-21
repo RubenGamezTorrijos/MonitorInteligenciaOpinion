@@ -1,0 +1,22 @@
+
+Article classes found:
+  styles_carouselReviewCard__YIr6O styles_reviewCard__meSdm: 50
+  CDS_Card_card__485220 styles_reviewCard__Qwhpy: 20
+
+Structure of first article:
+Tag: div | Class: ['styles_consumerDetailsWrapper__4eZod'] | Text: CVCORTES VARGAS MARIA DEL SOCO
+Tag: div | Class: ['CDS_Avatar_avatar__dd33e0', 'CDS_Avatar_orange__dd33e0'] | Text: CV
+Tag: span | Class: ['CDS_Typography_appearance-default__dd9b51', 'CDS_Typography_prettyStyle__dd9b51', 'CDS_Typography_heading-xs__dd9b51', 'CDS_Typography_disableResponsiveSizing__dd9b51', 'CDS_Avatar_avatarName__dd33e0'] | Text: CV
+Tag: a | Class: ['link_internal__Eam_b', 'link_wrapper__ahpyq', 'styles_consumerDetails__POC79'] | Text: CORTES VARGAS MARIA DEL SOCORR
+Tag: span | Class: ['CDS_Typography_appearance-default__dd9b51', 'CDS_Typography_prettyStyle__dd9b51', 'CDS_Typography_heading-xs__dd9b51', 'styles_consumerName__xKr9c'] | Text: CORTES VARGAS MARIA DEL SOCORR
+Tag: div | Class: ['styles_consumerExtraDetails__NY6RP'] | Text: Hace 2 días
+Tag: div | Class: ['CDS_Typography_appearance-subtle__dd9b51', 'CDS_Typography_prettyStyle__dd9b51', 'CDS_Typography_body-m__dd9b51'] | Text: Hace 2 días
+Tag: time | Class: [] | Text: Hace 2 días
+  Datetime: 2025-12-19T10:17:55.000Z
+Tag: div | Class: ['styles_starRating__BhKtt'] | Text: 
+Tag: img | Class: ['CDS_StarRating_starRating__614d2e'] | Text: 
+  Alt: Valorada con 1 estrellas sobre 5
+Tag: div | Class: ['styles_reviewText__q8Zhv'] | Text: He comprado un pack de canapé 
+Tag: p | Class: ['CDS_Typography_appearance-default__dd9b51', 'CDS_Typography_prettyStyle__dd9b51', 'CDS_Typography_body-l__dd9b51'] | Text: He comprado un pack de canapé 
+Tag: span | Class: ['CDS_Typography_appearance-action__dd9b51', 'CDS_Typography_prettyStyle__dd9b51', 'CDS_Typography_default__dd9b51', 'styles_seeMore__J_tOL'] | Text: Ver más
+Tag: div | Class: ['styles_reviewActionsVariant__FKFd6'] | Text: 
