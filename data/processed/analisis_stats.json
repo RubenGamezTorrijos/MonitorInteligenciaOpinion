@@ -1,32 +1,32 @@
 {
-  "total_resenas": 140,
-  "polaridad_promedio": -0.02,
-  "subjetividad_promedio": 0.065,
+  "total_resenas": 210,
+  "polaridad_promedio": -0.019999999999999997,
+  "subjetividad_promedio": 0.06499999999999999,
   "distribucion_sentimientos": {
-    "neutral": 136,
-    "negativo": 4
+    "neutral": 204,
+    "negativo": 6
   },
   "top_palabras": {
-    "amazon": 56,
-    "texto": 40,
-    "disponible": 40,
-    "cliente": 26,
-    "atencion": 22,
-    "dias": 22,
-    "entrega": 20,
-    "dicen": 18,
-    "comprado": 16,
-    "producto": 16,
-    "dia": 16,
-    "pedido": 14,
-    "dos": 12,
-    "servicio": 12,
-    "despues": 12,
-    "devolucion": 12,
-    "compre": 12,
-    "compra": 10,
-    "llevo": 10,
-    "paquete": 10
+    "texto": 60,
+    "disponible": 60,
+    "cliente": 39,
+    "atencion": 33,
+    "dias": 33,
+    "entrega": 30,
+    "dicen": 27,
+    "comprado": 24,
+    "dia": 24,
+    "pedido": 21,
+    "dos": 18,
+    "servicio": 18,
+    "despues": 18,
+    "devolucion": 18,
+    "compre": 18,
+    "compra": 15,
+    "llevo": 15,
+    "paquete": 15,
+    "entregado": 12,
+    "suscripcion": 12
   },
-  "correlacion_puntuacion_polaridad": 0.05108403372400214
+  "correlacion_puntuacion_polaridad": 0.047881379225755645
 }

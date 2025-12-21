@@ -1,3 +1,7 @@
+# FASE 1: Web Scraping
+# Desarrollado por: Persona A (Organizador)
+# Apoyo en funciones auxiliares: Persona B (Colaborador)
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -35,15 +39,15 @@ class TrustpilotScraper:
                 url = f"{company_url}?page={page}"
             
             try:
-                # Petición HTTP con delay aleatorio
-                time.sleep(random.uniform(1, 3))
+                # Petición HTTP con delay aleatorio (Implementado por Persona B para ser ético)
+                time.sleep(random.uniform(2, 4))
                 response = requests.get(url, headers=self.headers)
                 response.raise_for_status()
                 
                 # Parsear HTML
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Encontrar todos los contenedores de reseñas
+                # Encontrar todos los contenedores de reseñas (Persona B: Investigar estructura HTML)
                 review_containers = soup.find_all('article')
                 
                 if not review_containers:
@@ -65,19 +69,17 @@ class TrustpilotScraper:
         print(f"\nTotal de reseñas extraídas: {len(self.reviews_data)}")
     
     def extract_review_data(self, review_element):
-        """Extrae los datos individuales de una reseña"""
+        """Extrae los datos individuales de una reseña (Persona A)"""
         try:
-            # Extraer texto del comentario
-            # Buscamos div con clase que contenga 'reviewText'
+            # Extraer texto del comentario (texto_comentario)
             text_div = review_element.find('div', class_=lambda x: x and 'reviewText' in x)
             if text_div:
                 text_p = text_div.find('p')
-                texto = text_p.get_text(strip=True) if text_p else text_div.get_text(strip=True)
+                texto_comentario = text_p.get_text(strip=True) if text_p else text_div.get_text(strip=True)
             else:
-                texto = "Texto no disponible"
+                texto_comentario = "Texto no disponible"
             
-            # Extraer puntuación (estrellas)
-            # Buscamos img con alt que contenga 'estrellas' o 'stars'
+            # Extraer puntuación
             rating_img = review_element.find('img', alt=lambda x: x and ('estrellas' in x or 'stars' in x))
             if rating_img:
                 alt_text = rating_img['alt']
@@ -97,64 +99,55 @@ class TrustpilotScraper:
             # Extraer título de la reseña
             title_element = review_element.find('h2')
             if not title_element:
-                 # A veces el título está en un a con clase typography_heading-s
                  title_element = review_element.find('a', class_=lambda x: x and 'heading-s' in x)
             
             titulo = title_element.get_text(strip=True) if title_element else "Sin título"
             
             return {
-                'titulo': titulo,
-                'texto': texto,
+                'usuario': usuario,
                 'puntuacion': puntuacion,
                 'fecha': fecha,
-                'usuario': usuario,
-                'timestamp_extraccion': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                'titulo': titulo,
+                'texto_comentario': texto_comentario,
+                'fecha_sistema': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
         except Exception as e:
             print(f"Error al extraer datos de reseña: {str(e)}")
             return None
     
-    def save_to_csv(self, filename='data/raw/reviews_raw.csv'):
-        """Guarda los datos en un archivo CSV"""
+    def save_to_csv(self, filename='data/raw/dataset_raw.csv'):
+        """Guarda los datos en un archivo CSV (Persona A)"""
         if not self.reviews_data:
             print("No hay datos para guardar")
             return
         
         df = pd.DataFrame(self.reviews_data)
-        df.to_csv(filename, index=False, encoding='utf-8')
+        df.to_csv(filename, index=False, encoding='utf-8-sig')
         print(f"Datos guardados en {filename}")
         return df
 
 def main():
     """Función principal para ejecutar el scraper"""
     
-    # URLs de empresas para scrapear (ejemplos)
-    empresas = [
-        "https://es.trustpilot.com/review/www.amazon.es",
-        "https://es.trustpilot.com/review/www.booking.com",
-        "https://es.trustpilot.com/review/www.elcorteingles.es"
-    ]
+    # URL de Amazon España
+    amazon_url = "https://es.trustpilot.com/review/www.amazon.es"
     
     scraper = TrustpilotScraper()
     
-    # Scrapear reseñas de Amazon como ejemplo
-    scraper.get_company_reviews(empresas[0], pages=2)
+    # Scrapear reseñas (Persona A & B)
+    scraper.get_company_reviews(amazon_url, pages=3)
     
-    # Guardar datos
-    df = scraper.save_to_csv('data/raw/reviews_amazon_raw.csv')
+    # Guardar datos (Fase 1)
+    df = scraper.save_to_csv('data/raw/dataset_raw.csv')
     
     # Mostrar información básica
     if df is not None:
         print("\n" + "="*50)
-        print("INFORMACIÓN DEL DATASET")
+        print("MUESTRA DEL DATASET EXTRAÍDO")
         print("="*50)
-        print(f"Número de reseñas: {len(df)}")
-        print(f"Columnas: {', '.join(df.columns)}")
-        print("\nPrimeras 3 reseñas:")
-        print(df[['usuario', 'puntuacion', 'texto']].head(3))
-        print("\nDistribución de puntuaciones:")
-        print(df['puntuacion'].value_counts().sort_index())
+        print(f"Reseñas rescatadas: {len(df)}")
+        print(df[['usuario', 'puntuacion', 'texto_comentario']].head(3))
 
 if __name__ == "__main__":
     main()

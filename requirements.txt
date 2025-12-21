@@ -1,22 +1,28 @@
-# Dependencias principales
+# ==========================================
+# Monitor de Inteligencia de Opinión
+# Lista de dependencias (Tarea Persona B)
+# ==========================================
+
+# Core & Data Manipulation
 pandas>=1.5.0
 numpy>=1.23.0
 
-# Web Scraping
+# Web Scraping (Fase 1)
 requests>=2.28.0
 beautifulsoup4>=4.11.0
 
-# Procesamiento de texto
+# NLP Processing (Fase 2)
 nltk>=3.8.0
 spacy>=3.5.0
 textblob>=0.17.0
 
-# Visualización
+# Visualization (Fase 4)
 matplotlib>=3.7.0
 seaborn>=0.12.0
 wordcloud>=1.9.0
 plotly>=5.14.0
 
-# Utilitarios
+# Utilities & Notebooks
 jupyter>=1.0.0
 ipykernel>=6.0.0
+nbformat>=5.0.0

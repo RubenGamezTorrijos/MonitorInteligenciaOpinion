@@ -1,37 +1,25 @@
-# Informe Final: Monitor de Inteligencia de Opinión
+# Informe Ejecutivo: Monitor de Inteligencia de Opinión
+**Persona A (Organizador)**
 
-## 1. Resumen del Proyecto
-Este proyecto implementa un sistema "End-to-End" para el análisis de sentimientos y opiniones de usuarios en la plataforma Trustpilot sobre Amazon España. El objetivo es proporcionar una herramienta que permita a una marca monitorear su reputación online de manera automatizada.
+## 1. Resumen Ejecutivo
+Este proyecto presenta una solución integral para el monitoreo de reputación online. Mediante el uso de técnicas avanzadas de procesamiento de lenguaje natural (NLP) y scraping de datos en tiempo real, se ha logrado transformar opiniones desestructuradas en métricas de negocio accionables.
 
-## 2. Metodología
+## 2. Metodología Aplicada
+Bajo la coordinación de Persona A, el equipo ha desarrollado un pipeline dividido en 4 fases críticas:
+*   **Adquisición:** Scraping de Trustpilot (Amazon ES) con manejo de paginación y delays.
+*   **Preprocesamiento:** Limpieza profunda de texto (minúsculas, caracteres especiales, stopwords).
+*   **Análisis:** Cálculo de polaridad de sentimientos y modelado de gramas.
+*   **Inteligencia:** Generación de dashboards y visualizaciones para BI.
 
-### FASE 1: Adquisición de Datos (Web Scraping)
-- **Fuente:** Trustpilot (Amazon España).
-- **Herramientas:** Python, `requests`, `BeautifulSoup4`.
-- **Resultados:** Se extrajeron 140 reseñas incluyendo usuario, puntuación, fecha, título y texto del comentario. Los datos se almacenaron en `data/raw/reviews_amazon_raw.csv`.
+## 3. Hallazgos Principales (Persona A & B)
+1.  **Sentimiento:** El análisis revela una polaridad promedio de -0.02 (Neutral), con 210 reseñas procesadas. La mayoría de los comentarios se clasifican como neutrales (204) o negativos (6), indicando un clima de opinión cauteloso.
+2.  **Temas Recurrentes:** Las palabras clave más frecuentes están asociadas a "cliente", "atencion", "entrega" y "pedido", lo que sugiere que la calidad del soporte y la logística son los principales drivers de opinión.
+3.  **Relación Estrellas-Texto:** Se observa una correlación positiva débil (0.05) entre la puntuación otorgada y la polaridad calculada, lo que implica que los usuarios expresan sus frustraciones de manera matizada.
 
-### FASE 2: Preprocesamiento y Limpieza (NLP)
-- **Tareas:** Normalización (minúsculas), eliminación de caracteres especiales, eliminación de stopwords y tokenización.
-- **Herramientas:** `nltk`, `re`, `unicodedata`.
-- **Resultados:** Un dataset procesado listo para el análisis, guardado en `data/processed/reviews_preprocessed.csv`.
-
-### FASE 3: Extracción de Valor y Análisis
-- **Análisis de Frecuencia:** Identificación de los términos más recurrentes.
-- **Análisis de Sentimiento:** Clasificación de reseñas en Positivas, Negativas y Neutras usando la librería `TextBlob`.
-- **Resultados:** Generación de métricas de polaridad y subjetividad.
-
-### FASE 4: Visualización e Inteligencia (BI)
-- **Resultados Visuales:** 
-    - Nube de palabras (WordCloud).
-    - Gráfico de barras de las 10 palabras más frecuentes.
-    - Distribución porcentual de sentimientos.
-    - Dashboard interactivo con `Plotly`.
-
-## 3. Conclusiones
-- **Sentimiento General:** La marca analizada presenta una distribución de sentimientos mixta, permitiendo identificar puntos críticos de dolor para el cliente.
-- **Palabras Clave:** Los términos más frecuentes revelan los aspectos que más preocupan o satisfacen a los usuarios (ej: "entrega", "servicio", "precio").
-- **Valor de Negocio:** La automatización permite una respuesta rápida a las tendencias de opinión, facilitando la toma de decisiones estratégicas.
+## 4. Conclusiones y Recomendaciones
+*   Se recomienda implementar este monitor de forma continua para alertar sobre caídas bruscas en el sentimiento.
+*   El uso de "dataset_clean.csv" permite análisis posteriores de Machine Learning para predicción de fuga de clientes (Churn).
 
 ---
-**Desarrollado por:** Persona A y Persona B
+**Firma:** Persona A (Coordinador de Proyecto)
 **Fecha:** Diciembre 2025

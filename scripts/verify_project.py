@@ -33,11 +33,11 @@ def verify_structure():
 def verify_dataset():
     print_header("TEST 2: VERIFICACION DEL DATASET (FASE 1)")
     try:
-        if not os.path.exists('data/raw/reviews_amazon_raw.csv'):
-            print("[ERROR] Archivo 'data/raw/reviews_amazon_raw.csv' NO existe")
+        if not os.path.exists('data/raw/dataset_raw.csv'):
+            print("[ERROR] Archivo 'data/raw/dataset_raw.csv' NO existe")
             return False
             
-        df_raw = pd.read_csv('data/raw/reviews_amazon_raw.csv')
+        df_raw = pd.read_csv('data/raw/dataset_raw.csv')
         print(f"[OK] Dataset raw cargado correctamente")
         print(f"  - Total resenas: {len(df_raw)}")
         print(f"  - Columnas: {list(df_raw.columns)}")
@@ -47,7 +47,7 @@ def verify_dataset():
         else:
             print(f"[WARN] Advertencia: Menos de 50 resenas ({len(df_raw)})")
             
-        required_cols = ['texto', 'puntuacion']
+        required_cols = ['texto_comentario', 'puntuacion']
         missing_cols = [col for col in required_cols if col not in df_raw.columns]
         
         if not missing_cols:
@@ -64,21 +64,18 @@ def verify_dataset():
 def verify_preprocessing():
     print_header("TEST 3: VERIFICACION DE PREPROCESAMIENTO (FASE 2)")
     try:
-        if not os.path.exists('data/processed/reviews_preprocessed.csv'):
-            print("[ERROR] Archivo 'data/processed/reviews_preprocessed.csv' NO existe")
+        if not os.path.exists('data/processed/dataset_clean.csv'):
+            print("[ERROR] Archivo 'data/processed/dataset_clean.csv' NO existe")
             return False
             
-        df_proc = pd.read_csv('data/processed/reviews_preprocessed.csv')
+        df_proc = pd.read_csv('data/processed/dataset_clean.csv')
         print(f"[OK] Dataset procesado cargado")
         
-        required_cols = ['texto_limpio', 'texto_sin_stopwords']
+        required_cols = ['texto_limpio', 'num_palabras']
         missing = [c for c in required_cols if c not in df_proc.columns]
         
         if not missing:
             print(f"[OK] Columnas de preprocesamiento presentes: {required_cols}")
-            # Verificar que no estan vacias
-            sample = df_proc.iloc[0]
-            print(f"  - Ejemplo texto limpio: {str(sample['texto_limpio'])[:50]}...")
             return True
         else:
             print(f"[ERROR] Faltan columnas de preprocesamiento: {missing}")

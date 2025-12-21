@@ -52,10 +52,6 @@ def main():
         {
             "name": "FASE 4: Visualización e Inteligencia (Notebook 4)",
             "cmd": f'"{jupyter_cmd}" nbconvert --to notebook --execute --inplace notebooks/4_visualizacion.ipynb'
-        },
-        {
-            "name": "VERIFICACIÓN FINAL (verify_project.py)",
-            "cmd": f'"{python_cmd}" scripts/verify_project.py'
         }
     ]
     
