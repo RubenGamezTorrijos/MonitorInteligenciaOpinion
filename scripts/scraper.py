@@ -72,12 +72,14 @@ class TrustpilotScraper:
         """Extrae los datos individuales de una reseña (Rubén)"""
         try:
             # Extraer texto del comentario (texto_comentario)
-            text_div = review_element.find('div', class_=lambda x: x and 'reviewText' in x)
-            if text_div:
-                text_p = text_div.find('p')
-                texto_comentario = text_p.get_text(strip=True) if text_p else text_div.get_text(strip=True)
+            # Usar selectores precisos identificados por auditoría
+            text_el = review_element.select_one('[data-service-review-text-typography="true"]')
+            if text_el:
+                texto_comentario = text_el.get_text(strip=True).replace("Ver más", "").strip()
             else:
-                texto_comentario = "Texto no disponible"
+                # Fallback a selectores anteriores o genéricos
+                text_div = review_element.find('p', class_=lambda x: x and 'reviewText' in x)
+                texto_comentario = text_div.get_text(strip=True) if text_div else "Texto no disponible"
             
             # Extraer puntuación
             rating_img = review_element.find('img', alt=lambda x: x and ('estrellas' in x or 'stars' in x))
@@ -92,19 +94,27 @@ class TrustpilotScraper:
             date_element = review_element.find('time')
             fecha = date_element['datetime'] if date_element else datetime.now().strftime("%Y-%m-%d")
             
-            # Extraer usuario
-            user_element = review_element.find(['span', 'div'], class_=lambda x: x and 'consumerName' in x)
-            usuario = user_element.get_text(strip=True) if user_element else "Anónimo"
+            # Extraer usuario y metadatos del usuario (Persona B: Estudio de usuarios)
+            user_el = review_element.select_one('[data-consumer-name-typography="true"]')
+            usuario = user_el.get_text(strip=True) if user_el else "Anónimo"
+            
+            location_el = review_element.select_one('[data-consumer-country-typography="true"]')
+            ubicacion = location_el.get_text(strip=True) if location_el else "Desconocida"
+            
+            count_el = review_element.select_one('[data-consumer-reviews-count-typography="true"]')
+            total_resenas_usuario = count_el.get_text(strip=True) if count_el else "0"
             
             # Extraer título de la reseña
-            title_element = review_element.find('h2')
-            if not title_element:
-                 title_element = review_element.find('a', class_=lambda x: x and 'heading-s' in x)
+            title_el = review_element.select_one('[data-review-title-typography="true"]')
+            if not title_el:
+                 title_el = review_element.find(['h2', 'a'], class_=lambda x: x and ('title' in x or 'heading' in x))
             
-            titulo = title_element.get_text(strip=True) if title_element else "Sin título"
+            titulo = title_el.get_text(strip=True) if title_el else "Sin título"
             
             return {
                 'usuario': usuario,
+                'ubicacion': ubicacion,
+                'total_resenas_usuario': total_resenas_usuario,
                 'puntuacion': puntuacion,
                 'fecha': fecha,
                 'titulo': titulo,
@@ -123,8 +133,13 @@ class TrustpilotScraper:
             return
         
         df = pd.DataFrame(self.reviews_data)
+        
+        # Eliminar duplicados (Persona B: Limpieza de datos)
+        # Un duplicado real tiene mismo usuario, mismo texto y misma fecha
+        df = df.drop_duplicates(subset=['usuario', 'texto_comentario', 'fecha'])
+        
         df.to_csv(filename, index=False, encoding='utf-8-sig')
-        print(f"Datos guardados en {filename}")
+        print(f"Datos guardados en {filename}. Filas únicas: {len(df)}")
         return df
 
 def main():

@@ -1,38 +1,69 @@
 import json
+import os
 
-notebook_path = 'notebooks/4_visualizacion.ipynb'
+def fix_visualization_notebook():
+    nb_path = 'notebooks/4_visualizacion.ipynb'
+    if not os.path.exists(nb_path):
+        print(f"Error: {nb_path} no encontrado.")
+        return
 
-with open(notebook_path, 'r', encoding='utf-8') as f:
-    nb = json.load(f)
-
-# Iterate through cells to find the code block
-for cell in nb['cells']:
-    if cell['cell_type'] == 'code':
-        source = cell['source']
-        # Join source to search
-        source_text = ''.join(source)
-        if "explode=[0.05, 0.05, 0.05]" in source_text:
-            print("Found target cell, patching...")
-            # Replace the line
+    with open(nb_path, 'r', encoding='utf-8') as f:
+        nb = json.load(f)
+    
+    # We'll search for the problematic lines and replace them
+    # target: for sentiment in ['positivo', 'neutral', 'negativo']:
+    # also add a check for empty box_data_list
+    
+    cells_updated = 0
+    for cell in nb['cells']:
+        if cell['cell_type'] == 'code':
+            source = cell['source']
             new_source = []
+            changed = False
             for line in source:
-                if "explode=[0.05, 0.05, 0.05]" in line:
-                    # We need to change how explode is defined.
-                    # It's inside the pie function call usually.
-                    # Easier to just replace the fixed list with a variable if defined before,
-                    # but here it is passed directly.
-                    # We will replace the list with a valid list comprehension or multiplication.
-                    # However, we need to know the length of sentiment_counts.
-                    # The code 'sentiment_counts = df['sentiment'].value_counts()' runs before.
-                    # So we can use [0.05] * len(sentiment_counts).
-                    new_line = line.replace("explode=[0.05, 0.05, 0.05]", "explode=[0.05] * len(sentiment_counts)")
-                    new_source.append(new_line)
-                else:
-                    new_source.append(line)
-            cell['source'] = new_source
-            break
+                # Fix lowercase strings to capitalized or handle both
+                if "for sentiment in ['positivo', 'neutral', 'negativo']:" in line:
+                    line = line.replace("['positivo', 'neutral', 'negativo']", "['Positivo', 'Neutral', 'Negativo']")
+                    changed = True
+                
+                # Fix common mismatch in viz code
+                if "sentiment in df['sentiment'].values" in line:
+                    if "sentiment.lower()" not in line and "Positivo" not in line:
+                        # If we already changed the loop to capitalized, this is fine
+                        pass
+                
+                new_source.append(line)
+            
+            # Add safety check for boxplot if not present
+            if "ax6.boxplot(box_data_list" in "".join(new_source) and "if box_data_list:" not in "".join(new_source):
+                # We need to find where bp = ax6.boxplot is and indent it
+                final_source = []
+                in_loop = False
+                for line in new_source:
+                    if "bp = ax6.boxplot" in line:
+                        final_source.append("    if box_data_list:\n")
+                        final_source.append("        " + line)
+                        changed = True
+                    elif "colors_box =" in line and "bp['boxes']" in "".join(new_source):
+                         final_source.append("        " + line)
+                    elif "for patch, color in zip(bp['boxes']" in line:
+                         final_source.append("        " + line)
+                    elif "patch.set_facecolor(color)" in line:
+                         final_source.append("        " + line)
+                    else:
+                        final_source.append(line)
+                new_source = final_source
 
-with open(notebook_path, 'w', encoding='utf-8') as f:
-    json.dump(nb, f, indent=1, ensure_ascii=False) # indent 1 to minimize diff or standard nbformat
+            if changed:
+                cell['source'] = new_source
+                cells_updated += 1
 
-print("Notebook patched.")
+    if cells_updated > 0:
+        with open(nb_path, 'w', encoding='utf-8') as f:
+            json.dump(nb, f, indent=1, ensure_ascii=False)
+        print(f"Notebook {nb_path} updated. {cells_updated} cells modified.")
+    else:
+        print("No changes needed or could not find targets.")
+
+if __name__ == "__main__":
+    fix_visualization_notebook()
