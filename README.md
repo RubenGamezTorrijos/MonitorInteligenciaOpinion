@@ -33,14 +33,14 @@ MonitorInteligenciaOpinion/
 │   ├── preprocessing.py    # Script de limpieza (Rubén/Juanes)
 │   └── verify_project.py   # Script de validación de calidad
 ├── notebooks/
-│   ├── 1_scraping.ipynb    # Fase 1: Extracción
-│   ├── 2_preprocesamiento.ipynb # Fase 2: NLP
-│   ├── 3_analisis.ipynb    # Fase 3: Valor
-│   └── 4_visualizacion.ipynb # Fase 4: Gráficos
-├── visualizations/         # Exportación de gráficos e informes
+│   ├── 1_scraping.ipynb    # Fase 1: Extracción  (Rubén)
+│   ├── 2_preprocesamiento.ipynb # Fase 2: NLP (Juanes)
+│   ├── 3_analisis.ipynb    # Fase 3: Valor (Rubén)
+│   └── 4_visualizacion.ipynb # Fase 4: Gráficos (Juanes)
+├── visualizations/         # Exportación de gráficos e informes (Juanes)
 ├── requirements.txt        # Dependencias (Juanes)
 ├── INFORME_FINAL.md        # Reporte ejecutivo (Rubén)
-└── README.md               # Instrucciones (Juanes)
+└── README.md               # Instrucciones (Rubén)
 ```
 
 ## 🛠️ Instalación y Uso
