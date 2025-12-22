@@ -26,37 +26,8 @@ class TextPreprocessor:
             nltk.download('punkt_tab')
         
         # Juanes: Investigación de stopwords en español
-        if language == 'spanish':
-            self.stop_words = set(stopwords.words('spanish'))
-            self.stemmer = SnowballStemmer('spanish')
-        else:
-            self.stop_words = set(stopwords.words('english'))
-            self.stemmer = SnowballStemmer('english')
         
-        self.custom_stopwords = {
-            'amazon', 'producto', 'si', 'sí', 'no', 'ya', 'ver', 'vez', 'tan', 'así', 'solo',
-            'sólo', 'aún', 'incluso', 'siempre', 'hace', 'hacer', 'puede',
-            'cada', 'mas', 'más', 'menos', 'mucho', 'poco', 'gran',
-            'texto', 'disponible', 'mas', 'ver' # Eliminar ruidos del scraper
-        }
-        self.stop_words.update(self.custom_stopwords)
-        
-    def clean_text(self, text: str) -> str:
-        """Limpieza básica (Rubén)"""
-        if not isinstance(text, str) or text == "Texto no disponible":
-            return ""
-        
-        text = text.lower() # minúsculas
-        # Eliminar acentos
-        text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-        # Eliminar URLs, menciones y hashtags (Rubén)
-        text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
-        text = re.sub(r'@\w+|#\w+', '', text)
-        # Eliminar símbolos y puntuación
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\d+', '', text)
-        text = re.sub(r'\s+', ' ', text).strip()
-        
+                
         return text
     
     def tokenize_text(self, text: str) -> List[str]:
@@ -78,8 +49,7 @@ class TextPreprocessor:
         tokens = self.tokenize_text(cleaned_text)
         
         # 3. Eliminación de stopwords (Juanes)
-        tokens_no_stop = self.remove_stopwords(tokens)
-        
+                
         # 4. Resultado final
         text_clean = ' '.join(tokens_no_stop)
         
@@ -152,13 +122,7 @@ def main():
     df_final = pd.concat([df.reset_index(drop=True), df_results.reset_index(drop=True)], axis=1)
     
     # Métricas avanzadas (Juanes)
-    df_final = preprocessor.calculate_persona_b_metrics(df_final)
     
-    output_path = 'data/processed/dataset_clean.csv'
-    df_final.to_csv(output_path, index=False, encoding='utf-8-sig')
-
-    print(f"Fase 2 completada exitosamente. Filas procesadas: {len(df_final)}")
-    print(f"Archivo guardado: {output_path}")
 
 if __name__ == "__main__":
     main()

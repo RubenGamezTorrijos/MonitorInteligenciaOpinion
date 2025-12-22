@@ -31,7 +31,8 @@ MonitorInteligenciaOpinion/
 ├── scripts/
 │   ├── scraper.py          # Script de extracción (Rubén)
 │   ├── preprocessing.py    # Script de limpieza (Rubén/Juanes)
-│   └── verify_project.py   # Script de validación de calidad
+│   ├── update_user_analysys.py # Script de actualización de análisis (Juanes)
+│   └── verify_project.py   # Script de validación de calidad (Rubén)
 ├── notebooks/
 │   ├── 1_scraping.ipynb    # Fase 1: Extracción  (Rubén)
 │   ├── 2_preprocesamiento.ipynb # Fase 2: NLP (Juanes)
