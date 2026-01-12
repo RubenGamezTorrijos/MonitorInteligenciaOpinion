@@ -20,21 +20,23 @@ lxml>=4.9.0
 # NLP Processing (Fase 2)
 # ------------------------------------------
 nltk>=3.8.0
+spacy>=3.5.0  # Faltaba por añadir esta librería.
 textblob>=0.17.1
 regex>=2023.0.0
 
 # ------------------------------------------
 # Visualization (Fase 4)
 # ------------------------------------------
-matplotlib>=3.6.0
+matplotlib>=3.7.0 # Nueva versión de 3.6.0 a 3.7.0.
 seaborn>=0.12.0
 wordcloud>=1.9.0
-plotly>=5.15.0
+plotly>=5.15.0  # En mi caso tenía la versión anterior 5.14.0
 
 # ------------------------------------------
 # Utilities & Notebooks
 # ------------------------------------------
-jupyter
-notebook
+jupyter>=1.0.0  # Recomendable siempre especificar la versión.
+ipykernel>=6.0.0  # Faltaba añadir esta librería.
+notebook>=6.5 # Aplicar siempre una versión mínima.
+nbformat>=5.0.0
 tqdm>=4.64.0
-
