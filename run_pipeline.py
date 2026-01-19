@@ -8,16 +8,18 @@ def print_step(message):
     print(f"🚀 {message}")
     print("="*60)
 
-def run_command(command, step_name):
+def run_command(command_args, step_name):
     print(f"Ejecutando: {step_name}...")
     start_time = time.time()
     
     try:
-        if "jupyter" in command:
-             # For jupyter commands, we might need to handle shell=True differently depending on OS
-             result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
-        else:
-             result = subprocess.run(command, shell=True, check=True, text=True, capture_output=True)
+        # Use a list of arguments for security and robustness
+        result = subprocess.run(
+            command_args, 
+            check=True, 
+            text=True, 
+            capture_output=True
+        )
              
         duration = time.time() - start_time
         print(f"✅ {step_name} completado con éxito ({duration:.2f}s)")
@@ -26,6 +28,9 @@ def run_command(command, step_name):
         print(f"❌ Error en {step_name}")
         print(f"Código de salida: {e.returncode}")
         print(f"Error output:\n{e.stderr}")
+        return False
+    except Exception as e:
+        print(f"❌ Error inesperado en {step_name}: {str(e)}")
         return False
 
 def main():
@@ -39,19 +44,19 @@ def main():
     steps = [
         {
             "name": "FASE 1: Web Scraping (scraper.py)",
-            "cmd": f'"{python_cmd}" scripts/scraper.py'
+            "cmd": [python_cmd, "scripts/scraper.py"]
         },
         {
             "name": "FASE 2: Preprocesamiento NLP (preprocessing.py)",
-            "cmd": f'"{python_cmd}" scripts/preprocessing.py'
+            "cmd": [python_cmd, "scripts/preprocessing.py"]
         },
         {
             "name": "FASE 3: Análisis de Valor (Notebook 3)",
-            "cmd": f'"{python_cmd}" -m jupyter nbconvert --to notebook --execute --inplace notebooks/3_analisis.ipynb'
+            "cmd": [python_cmd, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace", "notebooks/3_analisis.ipynb"]
         },
         {
             "name": "FASE 4: Visualización e Inteligencia (Notebook 4)",
-            "cmd": f'"{python_cmd}" -m jupyter nbconvert --to notebook --execute --inplace notebooks/4_visualizacion.ipynb'
+            "cmd": [python_cmd, "-m", "jupyter", "nbconvert", "--to", "notebook", "--execute", "--inplace", "notebooks/4_visualizacion.ipynb"]
         }
     ]
     

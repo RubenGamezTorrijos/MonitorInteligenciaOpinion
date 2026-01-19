@@ -1,7 +1,3 @@
-# FASE 2: Preprocesamiento y Limpieza (NLP)
-# Pipeline de limpieza: Desarrollado por Rubén
-# Stopwords y estadísticas: Desarrollado por Juanes
-
 import pandas as pd
 import re
 import string
@@ -11,6 +7,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import SnowballStemmer
 import unicodedata
+import os
 
 
 class TextPreprocessor:
@@ -24,15 +21,18 @@ class TextPreprocessor:
             nltk.download('punkt')
             nltk.download('stopwords')
 
-        # Investigación de stopwords en español (Juanes)
-    
-        stopwords_nltk = set(stopwords.words(self.language))
+        # Cache stopwords
+        try:
+            stopwords_nltk = set(stopwords.words(self.language))
+        except:
+            nltk.download('stopwords')
+            stopwords_nltk = set(stopwords.words(self.language))
 
         def normalize_word(word):
             return ''.join(
                 c for c in unicodedata.normalize('NFD', word)
                 if unicodedata.category(c) != 'Mn'
-            )
+            ).lower()
 
         stopwords_normalizadas = {normalize_word(w) for w in stopwords_nltk}
 
@@ -46,11 +46,11 @@ class TextPreprocessor:
         }
 
         self.stop_words = stopwords_normalizadas.union(stopwords_amazon)
-
-        # Stemmer español
         self.stemmer = SnowballStemmer(self.language)
 
     def clean_text(self, text: str) -> str:
+        if pd.isna(text) or text == "Texto no disponible":
+            return ""
         text = str(text).lower()
         text = unicodedata.normalize('NFD', text)
         text = ''.join(
@@ -62,117 +62,81 @@ class TextPreprocessor:
         return text
 
     def tokenize_text(self, text: str) -> List[str]:
+        if not text: return []
         return word_tokenize(text, language=self.language)
 
     def remove_stopwords(self, tokens: List[str]) -> List[str]:
-        return [token for token in tokens if token not in self.stop_words]
+        return [token for token in tokens if token not in self.stop_words and len(token) > 2]
 
     def apply_stemming(self, tokens: List[str]) -> List[str]:
-        """Stemming (Desarrollado por Juanes)"""
         return [self.stemmer.stem(token) for token in tokens]
 
     def preprocess_pipeline(self, text: str) -> Dict[str, Any]:
-        """Integración de pipeline (Rubén + Juanes)"""
-
-        # 1. Limpieza (Rubén)
         cleaned_text = self.clean_text(text)
-
-        # 2. Tokenización (Rubén)
         tokens = self.tokenize_text(cleaned_text)
-
-        # 3. Eliminación de stopwords (Juanes)
         tokens_no_stop = self.remove_stopwords(tokens)
-
-        # 4. Resultado final
         text_clean = ' '.join(tokens_no_stop)
 
         return {
             'texto_limpio': text_clean,
             'texto_original': text,
-            'texto_comentario_limpio': cleaned_text,
-            'tokens': tokens,
-            'tokens_sin_stopwords': tokens_no_stop,
+            'tokens': tokens_no_stop,
             'num_palabras': len(tokens),
             'num_palabras_limpias': len(tokens_no_stop)
         }
 
-    def calculate_persona_b_metrics(self, df: pd.DataFrame):
-        """Métricas adicionales implementadas por Juanes"""
-        print("Calculando estadísticas avanzadas (Juanes)...")
-
+    def calculate_metrics(self, df: pd.DataFrame):
+        print("Calculando estadísticas avanzadas...")
         df['longitud_comentario'] = df['texto_comentario'].fillna('').str.len()
-
         df['conteo_palabras_unicas'] = df['texto_limpio'].apply(
-            lambda x: len(set(str(x).split()))
+            lambda x: len(set(str(x).split())) if pd.notna(x) else 0
         )
 
         def clean_resenas_count(val):
-            if pd.isna(val):
-                return 0
+            if pd.isna(val): return 0
             match = re.search(r'(\d+)', str(val))
             return int(match.group(1)) if match else 0
 
         if 'total_resenas_usuario' in df.columns:
-            df['num_resenas_usuario_total'] = df['total_resenas_usuario'].apply(
-                clean_resenas_count
-            )
+            df['num_resenas_usuario_total'] = df['total_resenas_usuario'].apply(clean_resenas_count)
 
         return df
 
 
 def main():
-    print("Cargando dataset_raw.csv...")
-    input_path = 'data/raw/dataset_raw.csv'
+    # Caminos relativos seguros
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    input_path = os.path.join(base_dir, 'data', 'raw', 'dataset_raw.csv')
+    output_path = os.path.join(base_dir, 'data', 'processed', 'dataset_clean.csv')
 
-    try:
-        df = pd.read_csv(input_path)
-    except:
-        df = pd.read_csv('../' + input_path)
+    print(f"Cargando dataset desde: {input_path}")
+    if not os.path.exists(input_path):
+        print(f"❌ Error: No se encuentra el archivo {input_path}")
+        return
 
-    # Eliminar duplicados si no se hizo en scrapling
+    df = pd.read_csv(input_path)
     df = df.drop_duplicates(subset=['usuario', 'texto_comentario', 'fecha'])
 
-    #Persona B: Estrategia de transformación (Combinar título y texto)
-    # Si el título no es "Sin título", lo concatenamos al texto para capturar su sentimiento/temas
-    print("Transformando datos (Combinación Título + Texto)...")
-
+    print("Transformando datos...")
     def combine_title_text(row):
-        title = str(row['titulo']) if pd.notna(row['titulo']) else ""
-        text = str(row['texto_comentario']) if pd.notna(row['texto_comentario']) else ""
-
-        if title.lower() in ["sin titulo", "nan"]:
-            return text
-        if text.lower() == "texto no disponible":
-            return title
-
-        return f"{title}. {text}"
+        title = str(row['titulo']) if pd.notna(row['titulo']) and str(row['titulo']).lower() != "sin título" else ""
+        text = str(row['texto_comentario']) if pd.notna(row['texto_comentario']) and str(row['texto_comentario']) != "Texto no disponible" else ""
+        return f"{title}. {text}".strip('. ')
 
     df['texto_para_analisis'] = df.apply(combine_title_text, axis=1)
 
     preprocessor = TextPreprocessor(language='spanish')
-
-    # Procesar sobre la nueva columna combinada (Rubén)
     print("Aplicando preprocesamiento NLP...")
+    
     results = df['texto_para_analisis'].apply(preprocessor.preprocess_pipeline)
     df_results = pd.DataFrame(list(results))
 
-    # Unir resultados
-    df_final = pd.concat(
-        [df.reset_index(drop=True), df_results.reset_index(drop=True)],
-        axis=1
-    )
+    df_final = pd.concat([df.reset_index(drop=True), df_results.reset_index(drop=True)], axis=1)
+    df_final = preprocessor.calculate_metrics(df_final)
 
-    # Métricas avanzadas (Juanes)
-    df_final = preprocessor.calculate_persona_b_metrics(df_final)
-
-    # Guardar dataset procesado
-    output_path = 'data/processed/dataset_procesado_final.csv'
-    try:
-        df_final.to_csv(output_path, index=False)
-    except:
-        df_final.to_csv('../' + output_path, index=False)
-
-    print("Dataset procesado guardado correctamente.")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    df_final.to_csv(output_path, index=False, encoding='utf-8-sig')
+    print(f"✅ Dataset procesado guardado en: {output_path}")
 
 
 if __name__ == "__main__":

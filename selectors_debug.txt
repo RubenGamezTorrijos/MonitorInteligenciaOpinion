@@ -1,0 +1,40 @@
+Container found: True
+Container attrs: {'data-service-review-card-paper': 'true', 'class': ['styles_carouselReviewCard__YIr6O', 'styles_reviewCard__meSdm']}
+FULL HTML:
+<article class="styles_carouselReviewCard__YIr6O styles_reviewCard__meSdm" data-service-review-card-paper="true">
+ <aside aria-label="Información sobre Xavier" class="styles_consumerInfoWrapper__6HN5O">
+  <div class="styles_consumerDetailsWrapper__4eZod">
+   <div class="CDS_Avatar_avatar__ea70c9 CDS_Avatar_pink__ea70c9" data-testid="consumer-avatar" style="width:44px;min-width:44px;height:44px;min-height:44px">
+    <span class="CDS_Typography_appearance-default__8be6e7 CDS_Typography_prettyStyle__8be6e7 CDS_Typography_heading-xs__8be6e7 CDS_Typography_disableResponsiveSizing__8be6e7 CDS_Avatar_avatarName__ea70c9">
+     XA
+    </span>
+   </div>
+   <a class="link_internal__Eam_b link_wrapper__ahpyq styles_consumerDetails__POC79" data-consumer-profile-link="true" data-cpl="true" href="/users/58663f9b0000ff000a66ec95" name="consumer-profile" rel="nofollow" target="_self">
+    <span class="CDS_Typography_appearance-default__8be6e7 CDS_Typography_prettyStyle__8be6e7 CDS_Typography_heading-xs__8be6e7 styles_consumerName__xKr9c" data-consumer-name-typography="true">
+     Xavier
+    </span>
+    <div class="styles_consumerExtraDetails__NY6RP" data-consumer-reviews-count="23">
+     <div class="CDS_Typography_appearance-subtle__8be6e7 CDS_Typography_prettyStyle__8be6e7 CDS_Typography_body-m__8be6e7">
+      <time class="" data-cpl="true" data-service-review-date-time-ago="true" datetime="2026-01-15T17:59:38.000Z">
+       Hace 4 días
+      </time>
+     </div>
+    </div>
+   </a>
+  </div>
+ </aside>
+ <div class="styles_starRating__BhKtt">
+  <img alt="Valorada con 2 estrellas sobre 5" class="CDS_StarRating_starRating__614d2e" src="https://cdn.trustpilot.net/brand-assets/4.1.0/stars/stars-2.svg" width="84px"/>
+ </div>
+ <div class="styles_reviewText__q8Zhv" role="button" tabindex="0">
+  <p class="CDS_Typography_appearance-default__8be6e7 CDS_Typography_prettyStyle__8be6e7 CDS_Typography_body-l__8be6e7" data-relevant-review-text-typography="true">
+   Llevo desde 2011 comprando en Amazon por valor de miles y miles de euros y hasta hace poco era mi web de referencia para compras online. No se que les ha pasado pero cada vez vamos a peor. Aparatos qu...
+   <span class="CDS_Typography_appearance-action__8be6e7 CDS_Typography_prettyStyle__8be6e7 CDS_Typography_default__8be6e7 styles_seeMore__J_tOL">
+    Ver más
+   </span>
+  </p>
+ </div>
+ <div class="styles_reviewActionsVariant__FKFd6">
+ </div>
+</article>
+

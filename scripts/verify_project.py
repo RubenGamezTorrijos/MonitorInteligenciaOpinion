@@ -11,18 +11,27 @@ def print_header(title):
 def verify_structure():
     print_header("TEST 1: VERIFICACION DE ESTRUCTURA DEL PROYECTO")
     required_dirs = ['data/raw', 'data/processed', 'notebooks', 'scripts', 'visualizations']
-    required_files = ['requirements.txt', 'notebooks/1_scraping.ipynb', 'scripts/scraper.py']
+    required_files = [
+        'requirements.txt', 
+        'notebooks/Analisis_Amazon_TrustPilot_v6_DeepSeek_Revisar.ipynb', 
+        'scripts/scraper.py',
+        'scripts/preprocessing.py'
+    ]
     
     all_ok = True
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
     for directory in required_dirs:
-        if os.path.exists(directory):
+        path = os.path.join(base_dir, directory)
+        if os.path.exists(path):
             print(f"[OK] Directorio '{directory}' existe")
         else:
             print(f"[ERROR] Directorio '{directory}' NO encontrado")
             all_ok = False
             
     for file in required_files:
-        if os.path.exists(file):
+        path = os.path.join(base_dir, file)
+        if os.path.exists(path):
             print(f"[OK] Archivo '{file}' existe")
         else:
             print(f"[ERROR] Archivo '{file}' NO encontrado")
@@ -32,12 +41,14 @@ def verify_structure():
 
 def verify_dataset():
     print_header("TEST 2: VERIFICACION DEL DATASET (FASE 1)")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    dataset_path = os.path.join(base_dir, 'data', 'raw', 'dataset_raw.csv')
     try:
-        if not os.path.exists('data/raw/dataset_raw.csv'):
-            print("[ERROR] Archivo 'data/raw/dataset_raw.csv' NO existe")
+        if not os.path.exists(dataset_path):
+            print(f"[ERROR] Archivo '{dataset_path}' NO existe")
             return False
             
-        df_raw = pd.read_csv('data/raw/dataset_raw.csv')
+        df_raw = pd.read_csv(dataset_path)
         print(f"[OK] Dataset raw cargado correctamente")
         print(f"  - Total resenas: {len(df_raw)}")
         print(f"  - Columnas: {list(df_raw.columns)}")
