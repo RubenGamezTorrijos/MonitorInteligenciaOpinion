@@ -37,11 +37,13 @@ class ReportExporter:
                 worksheet.write(0, col_num, value, header_format)
             
             # Ajuste de columnas
-            for i, col in enumerate(df.columns):
                 column_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
                 worksheet.set_column(i, i, min(column_len, 60))
-                
-        return output.getvalue()
+        
+        # Capture and close
+        excel_data = output.getvalue()
+        output.close()
+        return excel_data
 
     def generate_pdf_report(self, df: pd.DataFrame, figures: Dict[str, Any]) -> bytes:
         """Creates a professional PDF report with executive KPIs and dashboard charts."""
@@ -108,7 +110,12 @@ class ReportExporter:
             
             # Añadir imágenes de gráficas individuales
             for name, fig in figures.items():
-                img_bytes = pio.to_image(fig, format="png", scale=2)
-                zf.writestr(f"graficas/{name}.png", img_bytes)
+                try:
+                    img_bytes = pio.to_image(fig, format="png", scale=2)
+                    zf.writestr(f"graficas/{name}.png", img_bytes)
+                except Exception:
+                    pass
                 
-        return zip_buffer.getvalue()
+        zip_data = zip_buffer.getvalue()
+        zip_buffer.close()
+        return zip_data
