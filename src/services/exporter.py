@@ -37,6 +37,7 @@ class ReportExporter:
                 worksheet.write(0, col_num, value, header_format)
             
             # Ajuste de columnas
+            for i, col in enumerate(df.columns):
                 column_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
                 worksheet.set_column(i, i, min(column_len, 60))
         
