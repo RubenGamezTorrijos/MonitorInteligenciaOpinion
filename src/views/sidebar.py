@@ -1,0 +1,109 @@
+import streamlit as st
+import io
+from src.config.constants import SIDEBAR_HEADER, ANALYZE_BUTTON, DEFAULT_DOMAIN, SCRAPE_MAX_REVIEWS
+from src.services.exporter import ReportExporter
+
+def render_sidebar():
+    """Renders the main control sidebar component."""
+    with st.sidebar:
+        st.title("📊 Monitor")
+        st.header(SIDEBAR_HEADER)
+        st.markdown("---")
+        
+        # Domain Input Section
+        st.subheader("🌐 Configuración de Marca")
+        domain_input = st.text_input(
+            "Dominio a analizar",
+            placeholder="ej: amazon.es",
+            value=DEFAULT_DOMAIN,
+            help="Introduce el nombre tal como aparece en Trustpilot. Ejemplo: https://es.trustpilot.com/review/'nombre_empresa'"
+        )
+        
+        max_reviews = st.slider(
+            "Cantidad de reseñas",
+            min_value=20,
+            max_value=200,
+            value=SCRAPE_MAX_REVIEWS,
+            step=20
+        )
+        
+        # Action Button
+        analyze_clicked = st.button(ANALYZE_BUTTON, type="primary")
+        
+        st.markdown("---")
+        
+        # Export Suite
+        st.subheader("📥 Exportación Profesional")
+        export_mode = st.selectbox(
+            "Formato de Reporte",
+            ["Dataset Excel (XLSX)", "Informe PDF Pro", "Pack Completo (ZIP)"]
+        )
+        
+        if st.session_state.get('data_ready', False):
+            df = st.session_state.df
+            analyzed_domain = st.session_state.get('analyzed_domain', domain_input)
+            exporter = ReportExporter(analyzed_domain)
+            
+            # Use session state to hold export data and avoid re-generation on rerun
+            if 'export_data' not in st.session_state:
+                st.session_state.export_data = None
+            if 'export_type' not in st.session_state:
+                st.session_state.export_type = None
+
+            # Reset export data if mode changes
+            if st.session_state.export_type != export_mode:
+                st.session_state.export_data = None
+                st.session_state.export_type = export_mode
+
+            if export_mode == "Dataset Excel (XLSX)":
+                if st.button("🛠️ Preparar Excel"):
+                    with st.spinner("Generando archivo Excel..."):
+                        st.session_state.export_data = bytes(exporter.to_excel(df))
+                
+                if st.session_state.export_data and st.session_state.export_type == "Dataset Excel (XLSX)":
+                    st.download_button(
+                        label="📂 Descargar Excel (XLSX)",
+                        data=st.session_state.export_data,
+                        file_name=f"{analyzed_domain}_analisis.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+            
+            elif export_mode == "Informe PDF Pro":
+                if st.button("📄 Preparar Informe PDF"):
+                    with st.spinner("Renderizando gráficas y generando informe..."):
+                        figures = st.session_state.get('figures', {})
+                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df, figures))
+                
+                if st.session_state.export_data and st.session_state.export_type == "Informe PDF Pro":
+                    st.download_button(
+                        label="📥 Descargar PDF",
+                        data=st.session_state.export_data,
+                        file_name=f"{analyzed_domain}_informe.pdf",
+                        mime="application/pdf"
+                    )
+            
+            elif export_mode == "Pack Completo (ZIP)":
+                if st.button("📦 Preparar Pack ZIP"):
+                    with st.spinner("Empaquetando activos analíticos..."):
+                        figures = st.session_state.get('figures', {})
+                        xlsx_data = exporter.to_excel(df)
+                        pdf_data = exporter.generate_pdf_report(df, figures)
+                        st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, figures))
+                
+                if st.session_state.export_data and st.session_state.export_type == "Pack Completo (ZIP)":
+                    st.download_button(
+                        label="📥 Descargar ZIP",
+                        data=st.session_state.export_data,
+                        file_name=f"{analyzed_domain}_intelligence_pack.zip",
+                        mime="application/zip"
+                    )
+                
+            st.success(f"✅ Análisis de {analyzed_domain} listo")
+        else:
+            st.info("Realiza un análisis para habilitar las opciones.")
+
+        st.markdown("---")
+        st.markdown("---")
+        st.caption("Version 2.0.0 - Production Intelligence")
+        
+    return domain_input, max_reviews, analyze_clicked

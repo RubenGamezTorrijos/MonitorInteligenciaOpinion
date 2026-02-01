@@ -1,0 +1,78 @@
+# Professional Streamlit Opinion Intelligence Monitor - Preprocessor Service
+
+import spacy
+import nltk
+from nltk.corpus import stopwords
+import re
+import unicodedata
+from typing import List, Optional, Dict
+import pandas as pd
+
+class SpanishTextPreprocessor:
+    """Service specialized for NLP preprocessing of Spanish e-commerce reviews."""
+    
+    def __init__(self):
+        # NLTK Stopwords
+        try:
+            self.stop_words = set(stopwords.words('spanish'))
+        except:
+            nltk.download('stopwords')
+            self.stop_words = set(stopwords.words('spanish'))
+            
+        # Add comprehensive industries/domain specific Stopwords from notebook
+        extra_stopwords = {
+            'amazon', 'amazones', 'temu', 'elcorteingles', 'pccomponentes',
+            'producto', 'productos', 'servicio', 'servicios', 'envío', 'envios',
+            'pedido', 'pedidos', 'cliente', 'clientes', 'comprar', 'compra',
+            'calidad', 'precio', 'tiempo', 'entrega', 'entregas', 'empresa',
+            'atención', 'recomiendo', 'recomendación', 'recomendaciones',
+            'problema', 'problemas', 'cosa', 'cosas', 'vez', 'veces', 'año',
+            'años', 'día', 'días', 'semana', 'semanas', 'mes', 'meses',
+            'hora', 'horas', 'minuto', 'minutos', 'momento',
+            'también', 'además', 'incluso', 'aunque', 'porque', 'pues',
+            'entonces', 'ahora', 'luego', 'después', 'antes', 'siempre',
+            'nunca', 'jamás', 'solo', 'solamente', 'quizás', 'tal', 'vez',
+            'hacer', 'hace', 'hice', 'hicieron', 'hecho', 'decir', 'dice',
+            'dijo', 'dijeron', 'poder', 'puede', 'puedo', 'podemos', 'poner',
+            'pone', 'puesto', 'ver', 'veo', 'visto', 'dar', 'da', 'dado',
+            'saber', 'sé', 'sabe', 'supuesto', 'querer', 'quiere', 'quería'
+        }
+        self.stop_words.update(extra_stopwords)
+
+    def clean_text(self, text: str) -> str:
+        """Limpieza completa del texto manteniendo significado en español."""
+        if not isinstance(text, str) or not text.strip():
+            return ""
+        
+        text = text.lower()
+        # Remove URLs/mentions
+        text = re.sub(r'https?://\S+|www\.\S+', '', text)
+        text = re.sub(r'@\w+|#\w+', '', text)
+        # Preserve only Spanish letters, spaces, ñ, and accents (as in notebook)
+        text = re.sub(r'[^a-záéíóúüñ\s]', ' ', text)
+        # Remove digits and extra spaces
+        text = re.sub(r'\d+', '', text)
+        text = ' '.join(text.split())
+        return text
+
+    def remove_stopwords(self, text: str) -> str:
+        """Removes stopwords and short words."""
+        if not text: return ""
+        tokens = text.split()
+        filtered = [w for w in tokens if w not in self.stop_words and len(w) > 2]
+        return ' '.join(filtered)
+
+    def process_pipeline(self, text: str) -> Dict:
+        """Executes full NLP pipeline from the notebook."""
+        cleaned = self.clean_text(text)
+        no_stopwords = self.remove_stopwords(cleaned)
+        tokens = no_stopwords.split()
+        
+        return {
+            'original': text,
+            'texto_limpio': cleaned,
+            'texto_sin_stopwords': no_stopwords,
+            'tokens': tokens,
+            'palabras_original': len(str(text).split()),
+            'palabras_limpias': len(tokens)
+        }

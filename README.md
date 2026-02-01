@@ -1,96 +1,52 @@
-# Monitor de Inteligencia de Opinión
+# 📊 Monitor de Opinión Inteligente Trustpilot
 
-Este proyecto implementa un sistema "End-to-End" para el análisis de opinión pública, simulando el flujo de trabajo de un equipo de Ciencia de Datos.
+Plataforma profesional de análisis de sentimientos y reputación online optimizada para **Trustpilot**. Esta herramienta transforma reseñas masivas en insights accionables mediante NLP (Procesamiento de Lenguaje Natural) y visualizaciones interactivas.
 
-Proyecto de análisis de datos textuales a partir de reseñas de Trustpilot sobre Amazon España.
+## 🚀 Características Principales
 
----
+- **Dashboard Interactivo**: 5 niveles de análisis (Resumen, Sentimiento, Inteligencia de Palabras, Tendencias y Correlación).
+- **Procesamiento Avanzado (NLP)**:
+    - Preprocesamiento robusto en español (400+ Stopwords).
+    - Análisis híbrido de sentimiento (TextBlob + Diccionario Local).
+    - Categorización automática de feedback (Servicio, Logística, Quejas, etc.).
+- **Suite de Exportación Pro**:
+    - **Excel (XLSX)**: Dataset limpio y formateado.
+    - **PDF Pro**: Informe ejecutivo con gráficas integradas.
+    - **Pack ZIP**: Todo el material analítico en un solo archivo.
 
-## 👥 Equipo y Roles
+## 🛠️ Instalación Local
 
-Este proyecto ha sido desarrollado siguiendo un plan de colaboración dividido en dos perfiles:
+1.  **Clonar el repositorio**:
+    ```bash
+    git clone https://github.com/RubenGamezTorrijos/MonitorInteligenciaOpinion.git
+    cd MonitorInteligenciaOpinion
+    ```
 
-*   **Rubén (Organizador/Coordinador):**
-    *   Gestión de repositorio y entorno.
-    *   Desarrollo del script principal de scraping (`scraper.py`).
-    *   Implementación del pipeline de limpieza NLP.
-    *   Análisis de frecuencia y sentimiento en Notebooks.
-    *   Generación del Informe Final.
-
-*   **Juanes (Colaborador):**
-    *   Investigación de librerías y estructura HTML.
-    *   Creación de funciones auxiliares y validación de datos.
-    *   Implementación de métricas estadísticas (longitud, palabras únicas).
-    *   Desarrollo de visualizaciones avanzadas y dashboard interactivo.
-    *   Creación de la lista de dependencias (`requirements.txt`).
-    *   Documentación (`README.md`) y presentaciones.
-
----
-
-## 📁 Estructura del Proyecto
-
-```
-MonitorInteligenciaOpinion/
-├── data/
-│   ├── raw/                # Dataset original (dataset_raw.csv)
-│   └── processed/          # Dataset limpio (dataset_clean.csv)
-├── scripts/                # Esta parte sólo se hará si se termina bien el cuaderno Notebook
-│   ├── scraper.py          # Script de extracción (Rubén)
-│   ├── preprocessing.py    # Script de limpieza (Juanes)
-│   ├── analysis.py         # Script de actualización de análisis (Juanes)
-│   ├── app.py              # Dashboard Web (Rubén)
-│   └── verify_project.py   # Script de validación de calidad (Rubén)
-├── notebooks/
-│   └── MONITOR_INTELIGENCIA_OPINION.ipynb  # Secciones:  # Fase 1: Extracción  (Rubén) 
-│                                                         # Fase 2: NLP (Juanes)
-│                                                         # Fase 3: Valor (Rubén)
-│                                                         # Fase 4: Gráficos (Juanes)
-├── visualizations/         # Exportación de gráficos e informes (Juanes) (Esta directorio no es para Notebooks)
-├── requirements.txt        # Dependencias (Juanes)
-├── INFORME_EJECUTIVO.md    # Reporte ejecutivo (Rubén)
-├── INFORME_TECNICO.md      # Memoria Técnica Detallada (Rubén)
-├── GUIA_RAPIDA.md          # Guía de instalación y uso (Rubén)
-└── README.md               # Instrucciones del Proyecto (Rubén)
-```
----
-
-## 🛠️ Instalación y Uso
-
-1.  **Configurar Entorno:**
+2.  **Configurar entorno**:
     ```bash
     python -m venv venv
-    .\venv\Scripts\activate
+    source venv/bin/activate  # Windows: venv\Scripts\activate
     pip install -r requirements.txt
     ```
 
-2.  **Ejecutar Pipeline Completo:**
-    He desarrollado un script maestro para facilitar el testing:
+3.  **Ejecutar**:
     ```bash
-    python run_pipeline.py
+    streamlit run app.py
     ```
 
-3.  **Ejecución Manual:**
-    - Extraer datos: `python scripts/scraper.py`
-    - Procesar: `python scripts/preprocessing.py`
-    - Verificación: `python scripts/verify_project.py`
+## ☁️ Despliegue en Streamlit Cloud
+
+1. Sube el código a un repositorio de GitHub.
+2. Conecta tu cuenta en [share.streamlit.io](https://share.streamlit.io).
+3. Selecciona `app.py` como punto de entrada.
+4. ¡Listo! Tu monitor estará accesible vía web.
+
+## 📁 Estructura del Proyecto
+
+- `src/services/`: Motores de scraping, NLP y exportación.
+- `src/views/`: Componentes de UI y estilos CSS.
+- `src/config/`: Constantes y branding.
+- `notebooks/`: Versión original de laboratorio (Jupyter).
 
 ---
-
-## Roles y Responsabilidades
-
-*   **Rubén (Project Lead / Backend):** Scraper, Lógica de Análisis, Validación, Informe Final.
-*   **Juanes (NLP Specialist / Visualization):** Preprocesamiento, Visualización, Dashboard, Dependencias.
-
-## Ejecución
-
-El proyecto puede ejecutarse de dos modos (Sólo para uso local con Python *.py):
-
-1.  **Modo Automático ("End-to-End"):** Ejecuta `python run_pipeline.py`.
-2.  **Modo Manual (Notebooks):** Ejecuta los notebooks en orden (1 al 4) en Google Colab o Jupyter.
-
-Para más detalles, consulta la `GUIA_RAPIDA.md`.
-
----
-
-## 📊 Resultados Principales
-El sistema extrae automáticamente más de 100 reseñas, aplica técnicas de NLP en español y clasifica el sentimiento del cliente, permitiendo identificar rápidamente los "drivers" de satisfacción de la marca.
+**Desarrollado para el Máster SSII - Monitor de Inteligencia de Opinión**
