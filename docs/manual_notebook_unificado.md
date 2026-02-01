@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # 📔 Manual de Uso: Trustpilot Monitor Inteligente (Unified)
+=======
+# 📔 Manual de Uso: Trustpilot Monitor Inteligente
+>>>>>>> main
 
 Este documento detalla el funcionamiento del notebook unificado y las mejoras implementadas para garantizar la robustez del scraping y la profundidad de los análisis.
 
