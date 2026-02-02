@@ -2,6 +2,8 @@
 
 Plataforma profesional de análisis de sentimientos y reputación online optimizada para **Trustpilot**. Esta herramienta transforma reseñas masivas en insights accionables mediante NLP (Procesamiento de Lenguaje Natural) y visualizaciones interactivas.
 
+MonitorOpinionInteligente_Portada.jpg
+
 ## 🚀 Características Principales
 
 - **Dashboard Interactivo**: 5 niveles de análisis (Resumen, Sentimiento, Inteligencia de Palabras, Tendencias y Correlación).
