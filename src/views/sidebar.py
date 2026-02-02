@@ -103,7 +103,6 @@ def render_sidebar():
             st.info("Realiza un análisis para habilitar las opciones.")
 
         st.markdown("---")
-        st.markdown("---")
-        st.caption("Version 2.0.0 - Production Intelligence")
+        st.caption("© 2026 Business Intelligence v.2.0.0")
         
     return domain_input, max_reviews, analyze_clicked
