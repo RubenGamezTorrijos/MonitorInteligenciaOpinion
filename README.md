@@ -1,6 +1,6 @@
 # 📊 Monitor de Inteligencia de Opinión
 
-![Portada](images/MonitorOpinionInteligencia_Portada.jpg)
+![Portada](images/MonitorOpinionInteligente_Portada.jpg)
 
 Este proyecto implementa un sistema **"End-to-End"** para el análisis de opinión pública, simulando el flujo de trabajo de un equipo profesional de Ciencia de Datos.
 
