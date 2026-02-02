@@ -58,7 +58,21 @@ class ReportExporter:
         output.close()
         return excel_data
 
-    def generate_pdf_report(self, df: pd.DataFrame, figures: Dict[str, Any]) -> bytes:
+    def _generate_report_charts(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Internal helper to centralize chart generation logic."""
+        return {
+            "Distribución por Categorías": viz_engine.generate_category_chart(df),
+            "Distribución de Sentimiento": viz_engine.generate_sentiment_pie(df),
+            "Histograma de Intensidad": viz_engine.generate_sentiment_hist(df),
+            "Evolución Temporal": viz_engine.generate_evolution_chart(df),
+            "Top 20 Palabras Clave": viz_engine.generate_word_freq_chart(df),
+            "Nube de Palabras": viz_engine.generate_wordcloud_static(df),
+            "Métricas por Sentimiento": viz_engine.generate_boxplot_insight(df),
+            "Drivers de Opinión": viz_engine.generate_drivers_chart(df),
+            "Matriz de Correlación": viz_engine.generate_correlation_heatmap(df)
+        }
+
+    def generate_pdf_report(self, df: pd.DataFrame) -> bytes:
         """Creates a professional PDF report with executive KPIs and dashboard charts."""
         pdf = FPDF()
         pdf.add_page()
@@ -90,38 +104,24 @@ class ReportExporter:
         pdf.cell(0, 10, "Análisis Visual de Reputación", ln=True)
         pdf.ln(5)
         
-        # Generar gráficas específicas en Matplotlib para evitar dependencia de Kaleido/Chrome
-        report_charts = {
-            "Distribución por Categorías": viz_engine.generate_category_chart(df),
-            "Distribución de Sentimiento": viz_engine.generate_sentiment_pie(df),
-            "Histograma de Intensidad": viz_engine.generate_sentiment_hist(df),
-            "Evolución Temporal": viz_engine.generate_evolution_chart(df),
-            "Top 20 Palabras Clave": viz_engine.generate_word_freq_chart(df),
-            "Nube de Palabras": viz_engine.generate_wordcloud_static(df),
-            "Métricas por Sentimiento": viz_engine.generate_boxplot_insight(df),
-            "Drivers de Opinión": viz_engine.generate_drivers_chart(df),
-            "Matriz de Correlación": viz_engine.generate_correlation_heatmap(df)
-        }
+        report_charts = self._generate_report_charts(df)
 
         for name, fig in report_charts.items():
             if fig is None: continue
             
             try:
                 img_buffer = io.BytesIO()
-                # Matplotlib support (much more stable in cloud)
                 fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
-                plt.close(fig) # Liberar memoria
+                plt.close(fig) 
                 
                 img_buffer.seek(0)
                 
-                # Gestión de salto de página inteligente
                 if pdf.get_y() > 180:
                     pdf.add_page()
                 
                 pdf.set_font("helvetica", "B", 12)
                 pdf.cell(0, 10, f"Gráfica: {name}", ln=True)
                 
-                # In-memory image support in fpdf2
                 pdf.image(img_buffer, w=180)
                 pdf.ln(10)
                 img_buffer.close()
@@ -131,7 +131,9 @@ class ReportExporter:
 
         return bytes(pdf.output())
 
-    def create_zip_bundle(self, domain: str, excel_bytes: bytes, pdf_bytes: bytes, figures: Dict[str, Any]) -> bytes:
+        return bytes(pdf.output())
+
+    def create_zip_bundle(self, domain: str, excel_bytes: bytes, pdf_bytes: bytes, df: pd.DataFrame) -> bytes:
         """Packages all analytical assets into a professional ZIP bundle."""
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -139,14 +141,16 @@ class ReportExporter:
             zf.writestr(f"{domain}_data_analisis.xlsx", excel_bytes)
             zf.writestr(f"{domain}_informe_profesional.pdf", pdf_bytes)
             
-            # Añadir imágenes de gráficas individuales (Fallback a Matplotlib)
-            # Nota: Para el ZIP seguimos intentando Plotly si es posible por calidad, 
-            # pero el informe PDF ahora usa Matplotlib.
-            for name, fig in figures.items():
+            # Añadir imágenes de gráficas individuales (Matplotlib para estabilidad en nube)
+            report_charts = self._generate_report_charts(df)
+            for name, fig in report_charts.items():
+                if fig is None: continue
                 try:
-                    if hasattr(fig, 'to_image'):
-                        img_bytes = pio.to_image(fig, format="png", scale=2)
-                        zf.writestr(f"graficas/{name}.png", img_bytes)
+                    img_buffer = io.BytesIO()
+                    fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
+                    plt.close(fig)
+                    zf.writestr(f"graficas/{name.replace(' ', '_').lower()}.png", img_buffer.getvalue())
+                    img_buffer.close()
                 except Exception:
                     pass
                 

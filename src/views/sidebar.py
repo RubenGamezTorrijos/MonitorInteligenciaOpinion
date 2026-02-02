@@ -71,8 +71,7 @@ def render_sidebar():
             elif export_mode == "Informe PDF Pro":
                 if st.button("📄 Preparar Informe PDF"):
                     with st.spinner("Renderizando gráficas y generando informe..."):
-                        figures = st.session_state.get('figures', {})
-                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df, figures))
+                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Informe PDF Pro":
                     st.download_button(
@@ -85,10 +84,9 @@ def render_sidebar():
             elif export_mode == "Pack Completo (ZIP)":
                 if st.button("📦 Preparar Pack ZIP"):
                     with st.spinner("Empaquetando activos analíticos..."):
-                        figures = st.session_state.get('figures', {})
                         xlsx_data = exporter.to_excel(df)
-                        pdf_data = exporter.generate_pdf_report(df, figures)
-                        st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, figures))
+                        pdf_data = exporter.generate_pdf_report(df)
+                        st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, df))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Pack Completo (ZIP)":
                     st.download_button(
