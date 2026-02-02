@@ -1,5 +1,4 @@
 # Professional Streamlit Opinion Intelligence Monitor - app.py
-st.write("DEPLOY CHECK v3.0.0")
 
 import streamlit as st
 import pandas as pd
