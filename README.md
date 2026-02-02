@@ -14,6 +14,7 @@ Este proyecto ha sido desarrollado siguiendo un plan de colaboración dividido e
 - Desarrollo del script principal de scraping (`scraper.py`).
 - Implementación del pipeline de limpieza NLP.
 - Análisis de frecuencia y sentimiento en Notebooks.
+- Desarrollado entorno web con Streamlit y Demo en Streamlit.app (Cloud Subdomain)
 - Generación del Informe Final.
 
 ### Juanes (Colaborador)
