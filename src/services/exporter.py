@@ -94,8 +94,16 @@ class ReportExporter:
                 
                 # Check if it's a Plotly figure or Matplotlib figure
                 if hasattr(fig, 'to_image'): # Plotly
-                    img_bytes = pio.to_image(fig, format="png", scale=2, width=800, height=500)
-                    img_buffer.write(img_bytes)
+                    try:
+                        import kaleido
+                        img_bytes = pio.to_image(fig, format="png", scale=2, width=800, height=500)
+                        img_buffer.write(img_bytes)
+                    except Exception as e:
+                        # Error específico para Kaleido/Chrome en la nube
+                        error_msg = str(e)
+                        if "Kaleido requires Google Chrome" in error_msg:
+                            raise Exception("Motor de renderizado (Chrome) no disponible en este servidor.")
+                        raise e
                 elif hasattr(fig, 'savefig'): # Matplotlib (like WordCloud)
                     fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
                 else:
