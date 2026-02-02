@@ -17,9 +17,17 @@ class ReportExporter:
         
     def to_excel(self, df: pd.DataFrame) -> bytes:
         """Generates an Excel (XLSX) buffer with styles and professional formatting."""
+        # Solución de compatibilidad: Excel no soporta zonas horarias (Timezones)
+        df_export = df.copy()
+        
+        # Convertir columnas datetime con zona horaria a 'naive' (sin zona horaria)
+        # Esto soluciona el ValueError: Excel does not support datetimes with timezones
+        for col in df_export.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
+            df_export[col] = df_export[col].dt.tz_localize(None)
+
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='Opiniones Analizadas', index=False)
+            df_export.to_excel(writer, sheet_name='Opiniones Analizadas', index=False)
             workbook = writer.book
             worksheet = writer.sheets['Opiniones Analizadas']
             
@@ -33,15 +41,17 @@ class ReportExporter:
             })
             
             # Aplicar formato a cabeceras
-            for col_num, value in enumerate(df.columns.values):
+            for col_num, value in enumerate(df_export.columns.values):
                 worksheet.write(0, col_num, value, header_format)
             
             # Ajuste de columnas
-            for i, col in enumerate(df.columns):
-                column_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            for i, col in enumerate(df_export.columns):
+                # Calcular el ancho máximo basado en el contenido
+                max_val = df_export[col].astype(str).map(len).max()
+                column_len = max(max_val, len(col)) + 2
                 worksheet.set_column(i, i, min(column_len, 60))
         
-        # Capture and close
+        # Capturar el contenido del buffer y cerrarlo
         excel_data = output.getvalue()
         output.close()
         return excel_data
