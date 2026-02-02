@@ -6,7 +6,9 @@ import plotly.io as pio
 from fpdf import FPDF
 from datetime import datetime
 from typing import List, Dict, Any
+import matplotlib.pyplot as plt
 from src.config.constants import DATA_DIR, PDF_REPORT_SUFFIX, ZIP_PACKAGE_SUFFIX
+from src.services import viz_engine
 
 class ReportExporter:
     """Service to generate professional PDF, Excel and ZIP reports."""
@@ -88,26 +90,27 @@ class ReportExporter:
         pdf.cell(0, 10, "Análisis Visual de Reputación", ln=True)
         pdf.ln(5)
         
-        for name, fig in figures.items():
+        # Generar gráficas específicas en Matplotlib para evitar dependencia de Kaleido/Chrome
+        report_charts = {
+            "Distribución por Categorías": viz_engine.generate_category_chart(df),
+            "Distribución de Sentimiento": viz_engine.generate_sentiment_pie(df),
+            "Histograma de Intensidad": viz_engine.generate_sentiment_hist(df),
+            "Evolución Temporal": viz_engine.generate_evolution_chart(df),
+            "Top 20 Palabras Clave": viz_engine.generate_word_freq_chart(df),
+            "Nube de Palabras": viz_engine.generate_wordcloud_static(df),
+            "Métricas por Sentimiento": viz_engine.generate_boxplot_insight(df),
+            "Drivers de Opinión": viz_engine.generate_drivers_chart(df),
+            "Matriz de Correlación": viz_engine.generate_correlation_heatmap(df)
+        }
+
+        for name, fig in report_charts.items():
+            if fig is None: continue
+            
             try:
                 img_buffer = io.BytesIO()
-                
-                # Check if it's a Plotly figure or Matplotlib figure
-                if hasattr(fig, 'to_image'): # Plotly
-                    try:
-                        import kaleido
-                        img_bytes = pio.to_image(fig, format="png", scale=2, width=800, height=500)
-                        img_buffer.write(img_bytes)
-                    except Exception as e:
-                        # Error específico para Kaleido/Chrome en la nube
-                        error_msg = str(e)
-                        if "Kaleido requires Google Chrome" in error_msg:
-                            raise Exception("Motor de renderizado (Chrome) no disponible en este servidor.")
-                        raise e
-                elif hasattr(fig, 'savefig'): # Matplotlib (like WordCloud)
-                    fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
-                else:
-                    continue # Skip unknown figure types
+                # Matplotlib support (much more stable in cloud)
+                fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
+                plt.close(fig) # Liberar memoria
                 
                 img_buffer.seek(0)
                 
@@ -116,7 +119,7 @@ class ReportExporter:
                     pdf.add_page()
                 
                 pdf.set_font("helvetica", "B", 12)
-                pdf.cell(0, 10, f"Gráfica: {name.replace('_', ' ').title()}", ln=True)
+                pdf.cell(0, 10, f"Gráfica: {name}", ln=True)
                 
                 # In-memory image support in fpdf2
                 pdf.image(img_buffer, w=180)
@@ -136,11 +139,14 @@ class ReportExporter:
             zf.writestr(f"{domain}_data_analisis.xlsx", excel_bytes)
             zf.writestr(f"{domain}_informe_profesional.pdf", pdf_bytes)
             
-            # Añadir imágenes de gráficas individuales
+            # Añadir imágenes de gráficas individuales (Fallback a Matplotlib)
+            # Nota: Para el ZIP seguimos intentando Plotly si es posible por calidad, 
+            # pero el informe PDF ahora usa Matplotlib.
             for name, fig in figures.items():
                 try:
-                    img_bytes = pio.to_image(fig, format="png", scale=2)
-                    zf.writestr(f"graficas/{name}.png", img_bytes)
+                    if hasattr(fig, 'to_image'):
+                        img_bytes = pio.to_image(fig, format="png", scale=2)
+                        zf.writestr(f"graficas/{name}.png", img_bytes)
                 except Exception:
                     pass
                 
