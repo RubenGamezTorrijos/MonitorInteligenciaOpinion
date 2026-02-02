@@ -15,5 +15,5 @@ tqdm>=4.65.0
 fpdf2>=2.7.0
 python-dotenv>=1.0.0
 xlsxwriter>=3.1.0
-kaleido>=0.2.1
+kaleido==0.1.0post1
 legacy-cgi>=0.1.0  # For Python 3.13 compatibility with old httpx
