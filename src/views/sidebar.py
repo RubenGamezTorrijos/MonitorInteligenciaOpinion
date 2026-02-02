@@ -103,6 +103,9 @@ def render_sidebar():
             st.info("Realiza un análisis para habilitar las opciones.")
 
         st.markdown("---")
-        st.caption("© 2026 Business Intelligence v.2.0.0")
+        from datetime import datetime
+        current_year = datetime.now().year
+        from src.config.constants import APP_VERSION
+        st.caption(f"© {current_year} Business Intelligence v.{APP_VERSION}")
         
     return domain_input, max_reviews, analyze_clicked

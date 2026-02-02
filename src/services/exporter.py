@@ -88,14 +88,20 @@ class ReportExporter:
         pdf.cell(0, 10, "Análisis Visual de Reputación", ln=True)
         pdf.ln(5)
         
-        # Directorio temporal para gráficas
-        os.makedirs(os.path.join(DATA_DIR, "pdf_plots"), exist_ok=True)
-        
         for name, fig in figures.items():
-            img_path = os.path.join(DATA_DIR, "pdf_plots", f"{name}.png")
-            # Kaleido engine for static images
             try:
-                pio.write_image(fig, img_path, scale=2, width=800, height=500)
+                img_buffer = io.BytesIO()
+                
+                # Check if it's a Plotly figure or Matplotlib figure
+                if hasattr(fig, 'to_image'): # Plotly
+                    img_bytes = pio.to_image(fig, format="png", scale=2, width=800, height=500)
+                    img_buffer.write(img_bytes)
+                elif hasattr(fig, 'savefig'): # Matplotlib (like WordCloud)
+                    fig.savefig(img_buffer, format='png', bbox_inches='tight', dpi=150)
+                else:
+                    continue # Skip unknown figure types
+                
+                img_buffer.seek(0)
                 
                 # Gestión de salto de página inteligente
                 if pdf.get_y() > 180:
@@ -103,8 +109,11 @@ class ReportExporter:
                 
                 pdf.set_font("helvetica", "B", 12)
                 pdf.cell(0, 10, f"Gráfica: {name.replace('_', ' ').title()}", ln=True)
-                pdf.image(img_path, w=180)
+                
+                # In-memory image support in fpdf2
+                pdf.image(img_buffer, w=180)
                 pdf.ln(10)
+                img_buffer.close()
             except Exception as e:
                 pdf.set_font("helvetica", "I", 10)
                 pdf.cell(0, 10, f"(Error al renderizar {name}: {str(e)})", ln=True)

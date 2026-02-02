@@ -6,6 +6,7 @@ import os
 APP_TITLE = "Monitor de Opinión Inteligente Trustpilot"
 APP_SUBTITLE = "Professional Sentiment & Brand Analytics"
 APP_ICON = "📊"
+APP_VERSION = "3.0.0"
 
 # Scraper Configuration
 TRUSTPILOT_BASE_URL = "https://es.trustpilot.com/review/"
@@ -30,7 +31,7 @@ PDF_REPORT_SUFFIX = "_intelligence_report.pdf"
 ZIP_PACKAGE_SUFFIX = "_complete_box.zip"
 
 # UI Labels (ES)
-TABS = ["📊 Resumen", "😊 Sentimiento", "☁️ Inteligencia de Palabras", "📈 Tendencias", "📉 Correlación"]
+TABS = ["📊 Resumen", "😊 Sentimiento", "☁️ Palabras Clave", "📈 Evolución", "🧠 Insights Pro", "📉 Correlación"]
 SIDEBAR_HEADER = "⚙️ Panel de Control"
 ANALYZE_BUTTON = "🚀 Iniciar Inteligencia de Opinión"
 
