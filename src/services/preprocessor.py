@@ -66,9 +66,18 @@ class SpanishTextPreprocessor:
         
         current_stops = self.stop_words.copy()
         if domain:
-            # Add domain name (e.g., 'ikea', 'amazon') and its parts to temporary stops
-            domain_clean = re.sub(r'[^a-z]', ' ', domain.lower())
-            current_stops.update(domain_clean.split())
+            # Aggressive domain filtering (e.g., 'amazon.es' -> 'amazon', 'es', 'amazones')
+            # 1. Split domain parts
+            parts = re.split(r'[.-]', domain.lower())
+            current_stops.update(parts)
+            
+            # 2. Add full clean name
+            main_name = parts[0]
+            current_stops.add(main_name)
+            
+            # 3. Add variations (plurals, common misspellings if needed)
+            current_stops.add(main_name + 'es') # e.g., amazones
+            current_stops.add(main_name + 's')  # e.g., amazons
             
         filtered = [w for w in tokens if w not in current_stops and len(w) > 2]
         return ' '.join(filtered)

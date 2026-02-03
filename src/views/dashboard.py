@@ -10,7 +10,7 @@ from wordcloud import WordCloud
 import seaborn as sns
 import io
 from src.config.constants import TABS, SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
-from src.services.viz_engine import generate_authority_scatter, generate_refinement_comparison
+from src.services.viz_engine import generate_authority_scatter, generate_refinement_comparison, generate_time_series_comparison
 
 def render_dashboard(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     """Orchestrates the rendering of horizontal tabs and their content."""
@@ -23,124 +23,238 @@ def render_dashboard(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     if 'figures' not in st.session_state:
         st.session_state.figures = {}
 
-    # Create Modern Horizontal Tabs
-    tab_list = st.tabs(TABS)
+    # Dynamic Tabs Configuration
+    final_tabs = TABS.copy()
+    if df_comp.empty:
+        if "⚔️ Comparativa" in final_tabs:
+            final_tabs.remove("⚔️ Comparativa")
+            
+    tab_list = st.tabs(final_tabs)
     
+    # 1. Overview
     with tab_list[0]:
-        _render_overview_tab(df)
+        _render_overview_tab(df, df_comp)
         
+    # 2. Sentiment
     with tab_list[1]:
-        _render_sentiment_tab(df)
+        _render_sentiment_tab(df, df_comp)
         
+    # 3. Intel
     with tab_list[2]:
-        _render_intel_tab(df)
+        _render_intel_tab(df, df_comp)
         
+    # 4. Trends
     with tab_list[3]:
-        _render_trends_tab(df)
-
-    with tab_list[4]:
-        _render_advanced_insights_tab(df)
+        _render_trends_tab(df, df_comp)
         
+    # 5. Advanced Insights
+    with tab_list[4]:
+        _render_advanced_insights_tab(df, df_comp)
+        
+    # 6. Correlation
     with tab_list[5]:
-        _render_corr_tab(df)
-
-    with tab_list[6]:
-        if not df_comp.empty:
+        _render_corr_tab(df, df_comp)
+        
+    # 7. Comparison (Only if active)
+    if not df_comp.empty and len(tab_list) > 6:
+        with tab_list[6]:
             _render_comparison_tab(df, df_comp)
-        else:
-            st.info("💡 **Tip:** Activa el 'Modo Comparativa' en el lateral para ver el benchmark entre dos marcas.")
 
-def _render_overview_tab(df: pd.DataFrame):
+def _render_overview_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("📈 Resumen Ejecutivo")
     
-    col1, col2, col3, col4 = st.columns(4)
-    avg_score = df['sentimiento_score'].mean()
-    total_reviews = len(df)
-    pos_perc = (len(df[df['sentimiento'] == 'positivo']) / total_reviews) * 100
-    
-    col1.metric("Sentimiento Promedio", f"{avg_score:.2f}")
-    col2.metric("Total Reseñas", total_reviews)
-    col3.metric("% Positivo", f"{pos_perc:.1f}%")
-    col4.metric("Confianza Media", f"{df['confianza'].mean():.1%}")
+    # helper to render metrics
+    def render_row(d, label):
+        c_dom, c1, c2, c3, c4 = st.columns([2, 2, 2, 2, 2])
+        avg_score = d['sentimiento_score'].mean()
+        total_reviews = len(d)
+        pos_perc = (len(d[d['sentimiento'] == 'positivo']) / total_reviews) * 100
+        
+        with c_dom:
+            st.markdown(f"### 🏷️ {label}")
+            st.caption("Dominio Analizado")
+            
+        c1.metric("Sentimiento", f"{avg_score:.2f}")
+        c2.metric("Total Reseñas", total_reviews)
+        c3.metric("% Positivo", f"{pos_perc:.1f}%")
+        c4.metric("Confianza", f"{d['confianza'].mean():.1%}")
+
+    if not df_comp.empty:
+        nom1 = df['domain'].iloc[0]
+        nom2 = df_comp['domain'].iloc[0]
+        
+        # Row 1: Main Domain
+        st.markdown(f"##### 🟦 Dominio Principal")
+        render_row(df, nom1)
+        st.divider()
+        
+        # Row 2: Comparison Domain
+        st.markdown(f"##### 🟧 Comparativa")
+        render_row(df_comp, nom2)
+        
+    else:
+        # Single mode: Standard Layout
+        render_row(df, df['domain'].iloc[0])
     
     st.markdown("---")
-    
-    # Category Distribution
-    st.write("### 🏷️ Distribución por Categorías Temáticas")
-    cat_counts = df['categoria_predom'].value_counts().reset_index()
-    cat_counts.columns = ['Categoría', 'Cantidad']
-    fig_cat = px.bar(cat_counts, x='Categoría', y='Cantidad', 
-                    color='Categoría', color_discrete_sequence=px.colors.qualitative.Prism,
-                    title="Temas recurrentes en opiniones")
-    st.plotly_chart(fig_cat, use_container_width=True)
-    st.session_state.figures['overview'] = fig_cat
+    st.write("### 🏷️ Distribución por Temas")
 
-    st.write("### 🔍 Muestra de Datos Analizados")
-    st.dataframe(df[['text', 'sentimiento', 'categoria_predom', 'keywords']].head(10), use_container_width=True)
+    def get_cat_fig(d, title, color_seq):
+        cat_counts = d['categoria_predom'].value_counts().reset_index()
+        cat_counts.columns = ['Categoría', 'Cantidad']
+        return px.bar(cat_counts, x='Categoría', y='Cantidad', 
+                     color='Categoría', color_discrete_sequence=color_seq,
+                     title=title)
 
-def _render_sentiment_tab(df: pd.DataFrame):
+    if not df_comp.empty:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"**{df['domain'].iloc[0]}**")
+            st.plotly_chart(get_cat_fig(df, "", px.colors.qualitative.Prism), use_container_width=True)
+        with c2:
+            st.markdown(f"**{df_comp['domain'].iloc[0]}**")
+            st.plotly_chart(get_cat_fig(df_comp, "", px.colors.qualitative.Pastel), use_container_width=True)
+    else:
+        fig_cat = get_cat_fig(df, "Temas recurrentes", px.colors.qualitative.Prism)
+        st.plotly_chart(fig_cat, use_container_width=True)
+        st.session_state.figures['overview'] = fig_cat
+
+    if df_comp.empty:
+        st.write("### 🔍 Muestra de Datos")
+        st.dataframe(df[['text', 'sentimiento', 'categoria_predom', 'keywords']].head(5), use_container_width=True)
+
+def _render_sentiment_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("😊 Análisis de Sentimiento")
     
-    col1, col2 = st.columns([1, 1])
-    
-    with col1:
-        fig_pie = px.pie(df, names='sentimiento', title='Polaridad Global (Donut)',
-                    color='sentimiento', color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'},
-                    hole=0.4)
-        st.plotly_chart(fig_pie, use_container_width=True)
-        st.session_state.figures['sentiment_pie'] = fig_pie
-        
-    with col2:
-        fig_hist = px.histogram(df, x="sentimiento_score", nbins=20, title="Distribución de Intensidad (-1 a 1)",
-                          color_discrete_sequence=['#22c55e'], labels={'sentimiento_score':'Score de Sentimiento'})
-        st.plotly_chart(fig_hist, use_container_width=True)
-        st.session_state.figures['sentiment_hist'] = fig_hist
-
-def _render_intel_tab(df: pd.DataFrame):
-    st.subheader("☁️ Inteligencia de Palabras")
-    
-    all_tokens = [t for sublist in df['tokens'] for t in sublist]
-    if all_tokens:
-        word_freq = pd.Series(all_tokens).value_counts().head(20).reset_index()
-        word_freq.columns = ['Palabra', 'Frecuencia']
-        
-        # 1. WordCloud (Full Width)
-        st.write("### ☁️ Nube de Palabras (WordCloud)")
-        text_for_cloud = " ".join(all_tokens)
-        if text_for_cloud:
-            wc = WordCloud(width=1200, height=500, background_color='white', 
-                          colormap='Greens', max_words=100).generate(text_for_cloud)
+    if not df_comp.empty:
+        # Comparative View
+        # Row 1: Donut Charts Side-by-Side with headers
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"#### 🟦 {df['domain'].iloc[0]}")
+            fig_pie1 = px.pie(df, names='sentimiento', 
+                        color='sentimiento', color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'},
+                        hole=0.4)
+            st.plotly_chart(fig_pie1, use_container_width=True)
             
-            fig_wc, ax = plt.subplots(figsize=(15, 6))
-            ax.imshow(wc, interpolation='bilinear')
-            ax.axis('off')
-            st.pyplot(fig_wc)
-            st.session_state.figures['wordcloud'] = fig_wc
-        else:
-            st.info("No hay palabras suficientes para generar la nube.")
-        
-        st.divider()
+        with c2:
+            st.markdown(f"#### 🟧 {df_comp['domain'].iloc[0]}")
+            fig_pie2 = px.pie(df_comp, names='sentimiento', 
+                        color='sentimiento', color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'},
+                        hole=0.4)
+            st.plotly_chart(fig_pie2, use_container_width=True)
 
-        # 2. Key Metrics & Table (Two Columns Below)
-        col1, col2 = st.columns([3, 2])
+        st.divider()
+        st.write("### 📊 Intensidad Emocional Comparada")
+        
+        # Overlay histograms (Scipy-free version)
+        import plotly.graph_objects as go
+        
+        fig_dist = go.Figure()
+        fig_dist.add_trace(go.Histogram(x=df['sentimiento_score'], name=df['domain'].iloc[0], 
+                                      marker_color='#22c55e', opacity=0.75))
+        fig_dist.add_trace(go.Histogram(x=df_comp['sentimiento_score'], name=df_comp['domain'].iloc[0], 
+                                      marker_color='#f97316', opacity=0.75))
+        
+        fig_dist.update_layout(barmode='overlay', title="Distribución de Sentimiento (Superpuesta)",
+                             xaxis_title="Score de Sentimiento", yaxis_title="Frecuencia")
+        st.plotly_chart(fig_dist, use_container_width=True)
+        
+    else:
+        # Standard Single View
+        col1, col2 = st.columns([1, 1])
         with col1:
-            st.write("### 🏆 Top 20 Palabras Clave")
-            fig_words = px.bar(word_freq, y='Palabra', x='Frecuencia', orientation='h',
-                        color='Frecuencia', color_continuous_scale='Greens')
-            fig_words.update_layout(yaxis={'categoryorder':'total ascending'})
-            st.plotly_chart(fig_words, use_container_width=True)
-            st.session_state.figures['word_freq'] = fig_words
+            fig_pie = px.pie(df, names='sentimiento', title='Polaridad Global (Donut)',
+                        color='sentimiento', color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'},
+                        hole=0.4)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            st.session_state.figures['sentiment_pie'] = fig_pie
             
         with col2:
-            st.write("### 💡 Datos de Extracción")
-            st.info("Términos más recurrentes tras el filtrado profundo de Stopwords.")
-            st.dataframe(word_freq, use_container_width=True)
-    else:
-        st.warning("No hay suficientes datos para la analítica de palabras.")
+            fig_hist = px.histogram(df, x="sentimiento_score", nbins=20, title="Distribución de Intensidad (-1 a 1)",
+                              color_discrete_sequence=['#22c55e'], labels={'sentimiento_score':'Score de Sentimiento'})
+            st.plotly_chart(fig_hist, use_container_width=True)
+            st.session_state.figures['sentiment_hist'] = fig_hist
 
-def _render_trends_tab(df: pd.DataFrame):
+def _render_intel_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
+    st.subheader("☁️ Inteligencia de Palabras")
+    
+    # Helper for WordCloud
+    def render_cloud(d, title):
+        all_tokens = [t for sublist in d['tokens'] for t in sublist]
+        if all_tokens:
+            text_for_cloud = " ".join(all_tokens)
+            wc = WordCloud(width=800, height=400, background_color='white', 
+                          colormap='Greens', max_words=100).generate(text_for_cloud)
+            fig_wc, ax = plt.subplots(figsize=(10, 5))
+            ax.imshow(wc, interpolation='bilinear')
+            ax.axis('off')
+            ax.set_title(title)
+            st.pyplot(fig_wc)
+        else:
+            st.info(f"Sin datos para {title}")
+
+    if not df_comp.empty:
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"#### 🟦 {df['domain'].iloc[0]}")
+            render_cloud(df, "Palabras Clave")
+        with c2:
+            st.markdown(f"#### 🟧 {df_comp['domain'].iloc[0]}")
+            render_cloud(df_comp, "Palabras Clave")
+    else:
+        # Standard Single View
+        all_tokens = [t for sublist in df['tokens'] for t in sublist]
+        if all_tokens:
+            word_freq = pd.Series(all_tokens).value_counts().head(20).reset_index()
+            word_freq.columns = ['Palabra', 'Frecuencia']
+            
+            st.write("### ☁️ Nube de Palabras (WordCloud)")
+            text_for_cloud = " ".join(all_tokens)
+            if text_for_cloud:
+                wc = WordCloud(width=1200, height=500, background_color='white', 
+                              colormap='Greens', max_words=100).generate(text_for_cloud)
+                
+                fig_wc, ax = plt.subplots(figsize=(15, 6))
+                ax.imshow(wc, interpolation='bilinear')
+                ax.axis('off')
+                st.pyplot(fig_wc)
+                text_for_cloud = " ".join(all_tokens)
+            
+            st.divider()
+    
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                st.write("### 🏆 Top 20 Palabras Clave")
+                fig_words = px.bar(word_freq, y='Palabra', x='Frecuencia', orientation='h',
+                            color='Frecuencia', color_continuous_scale='Greens')
+                fig_words.update_layout(yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_words, use_container_width=True)
+                st.session_state.figures['word_freq'] = fig_words
+                
+            with col2:
+                st.write("### 💡 Datos de Extracción")
+                st.info("Términos más recurrentes tras el filtrado profundo de Stopwords.")
+                st.dataframe(word_freq, use_container_width=True)
+        else:
+            st.warning("No hay suficientes datos para la analítica de palabras.")
+
+def _render_trends_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("📈 Evolución Temporal")
-    if 'date' in df.columns:
+    
+    if not df_comp.empty:
+        nom1 = df['domain'].iloc[0]
+        nom2 = df_comp['domain'].iloc[0]
+        st.markdown(f"#### 🆚 Comparativa: **{nom1}** vs **{nom2}**")
+        
+        # Use new comparative viz function
+        fig_evol = generate_time_series_comparison(df, df_comp, nom1, nom2)
+        if fig_evol:
+            st.pyplot(fig_evol)
+        else:
+            st.warning("No se pudieron generar las series temporales comparadas.")
+            
+    elif 'date' in df.columns:
         df['date'] = pd.to_datetime(df['date'])
         df_trends = df.sort_values('date')
         fig_trends = px.line(df_trends, x='date', y='sentimiento_score', title="Tendencia de Sentimiento en el Tiempo",
@@ -151,62 +265,96 @@ def _render_trends_tab(df: pd.DataFrame):
     else:
         st.error("No se detectaron datos temporales válidos.")
 
-def _render_advanced_insights_tab(df: pd.DataFrame):
+def _render_advanced_insights_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("🧠 Análisis de Insights Avanzados")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("### 📏 Distribución de Longitud por Sentimiento")
-        fig_box = px.box(df, x="sentimiento", y="palabras_original", color="sentimiento",
-                        title="Boxplot: Longitud de Reseña vs Sentimiento",
-                        color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'})
-        st.plotly_chart(fig_box, use_container_width=True)
-        st.session_state.figures['boxplot_length'] = fig_box
-
-    with col2:
-        st.write("### 🎯 Drivers de Opinión: Positivo vs Negativo")
-        # Extract keywords for positive and negative
-        pos_tokens = [t for sublist in df[df['sentimiento'] == 'positivo']['tokens'] for t in sublist]
-        neg_tokens = [t for sublist in df[df['sentimiento'] == 'negativo']['tokens'] for t in sublist]
+    if not df_comp.empty:
+        st.info("⚠️ Mostrando insights comparativos simplificados")
+        nom1 = df['domain'].iloc[0]
+        nom2 = df_comp['domain'].iloc[0]
         
-        pos_freq = pd.Series(pos_tokens).value_counts().head(10)
-        neg_freq = pd.Series(neg_tokens).value_counts().head(10)
-        
-        # Create a comparison dataframe
-        comparison_df = pd.DataFrame({
-            'Palabra': list(pos_freq.index) + list(neg_freq.index),
-            'Frecuencia': list(pos_freq.values) + [-v for v in neg_freq.values],
-            'Sentimiento': ['Positivo']*len(pos_freq) + ['Negativo']*len(neg_freq)
-        })
-        
-        fig_drivers = px.bar(comparison_df, x='Frecuencia', y='Palabra', color='Sentimiento',
-                            orientation='h', title="Top Drivers (Frecuencia Comparada)",
-                            color_discrete_map={'Positivo':'#22c55e', 'Negativo':'#ef4444'})
-        fig_drivers.update_layout(yaxis={'categoryorder':'total ascending'})
-        st.plotly_chart(fig_drivers, use_container_width=True)
-        st.session_state.figures['opinion_drivers'] = fig_drivers
-
-    st.divider()
-    st.write("### 🏗️ Arquitectura Híbrida y Veracidad del Modelo")
-    
-    col3, col4 = st.columns(2)
-    with col3:
-        st.info("📊 **Autoridad del Revisor (PageRank):** Muestra cómo el sistema pondera las reseñas basándose en la importancia de cada usuario en la red.")
-        fig_auth = generate_authority_scatter(df)
-        if fig_auth:
-            st.pyplot(fig_auth)
-            st.session_state.figures['authority_scatter'] = fig_auth
+        # 1. Authority Scatter Comparison
+        st.write(f"### 📊 Autoridad del Revisor: {nom1} vs {nom2}")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.caption(f"Autoridad: {nom1}")
+            fig1 = generate_authority_scatter(df)
+            if fig1: st.pyplot(fig1)
+        with c2:
+            st.caption(f"Autoridad: {nom2}")
+            fig2 = generate_authority_scatter(df_comp)
+            if fig2: st.pyplot(fig2)
             
-    with col4:
-        st.info("🧪 **Refinamiento de Sentimiento:** Comparación entre el score base (TF-IDF) y el ajustado por Filtrado Colaborativo y Autoridad.")
-        fig_refine = generate_refinement_comparison(df)
-        if fig_refine:
-            st.pyplot(fig_refine)
-            st.session_state.figures['refinement_comparison'] = fig_refine
+        st.divider()
+        
+        # 2. Refinement Comparison
+        st.write(f"### 🧪 Efecto del Refinamiento Híbrido")
+        c3, c4 = st.columns(2)
+        with c3:
+            fig_ref1 = generate_refinement_comparison(df)
+            if fig_ref1: st.pyplot(fig_ref1)
+        with c4:
+            fig_ref2 = generate_refinement_comparison(df_comp)
+            if fig_ref2: st.pyplot(fig_ref2)
+            
+    else:
+        # Standard Single View
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.write("### 📏 Distribución de Longitud por Sentimiento")
+            fig_box = px.box(df, x="sentimiento", y="palabras_original", color="sentimiento",
+                            title="Boxplot: Longitud de Reseña vs Sentimiento",
+                            color_discrete_map={'positivo':'#22c55e', 'negativo':'#ef4444', 'neutral':'#eab308'})
+            st.plotly_chart(fig_box, use_container_width=True)
+            st.session_state.figures['boxplot_length'] = fig_box
+    
+        with col2:
+            st.write("### 🎯 Drivers de Opinión: Positivo vs Negativo")
+            # Extract keywords for positive and negative
+            pos_tokens = [t for sublist in df[df['sentimiento'] == 'positivo']['tokens'] for t in sublist]
+            neg_tokens = [t for sublist in df[df['sentimiento'] == 'negativo']['tokens'] for t in sublist]
+            
+            pos_freq = pd.Series(pos_tokens).value_counts().head(10)
+            neg_freq = pd.Series(neg_tokens).value_counts().head(10)
+            
+            # Create a comparison dataframe
+            comparison_df = pd.DataFrame({
+                'Palabra': list(pos_freq.index) + list(neg_freq.index),
+                'Frecuencia': list(pos_freq.values) + [-v for v in neg_freq.values],
+                'Sentimiento': ['Positivo']*len(pos_freq) + ['Negativo']*len(neg_freq)
+            })
+            
+            fig_drivers = px.bar(comparison_df, x='Frecuencia', y='Palabra', color='Sentimiento',
+                                orientation='h', title="Top Drivers (Frecuencia Comparada)",
+                                color_discrete_map={'Positivo':'#22c55e', 'Negativo':'#ef4444'})
+            fig_drivers.update_layout(yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig_drivers, use_container_width=True)
+            st.session_state.figures['opinion_drivers'] = fig_drivers
+    
+        st.divider()
+        st.write("### 🏗️ Arquitectura Híbrida y Veracidad del Modelo")
+        
+        col3, col4 = st.columns(2)
+        with col3:
+            st.info("📊 **Autoridad del Revisor (PageRank):** Muestra cómo el sistema pondera las reseñas basándose en la importancia de cada usuario en la red.")
+            fig_auth = generate_authority_scatter(df)
+            if fig_auth:
+                st.pyplot(fig_auth)
+                st.session_state.figures['authority_scatter'] = fig_auth
+                
+        with col4:
+            st.info("🧪 **Refinamiento de Sentimiento:** Comparación entre el score base (TF-IDF) y el ajustado por Filtrado Colaborativo y Autoridad.")
+            fig_refine = generate_refinement_comparison(df)
+            if fig_refine:
+                st.pyplot(fig_refine)
+                st.session_state.figures['refinement_comparison'] = fig_refine
 
-def _render_corr_tab(df: pd.DataFrame):
+def _render_corr_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("📉 Matriz de Correlación")
+    
+    if not df_comp.empty:
+        st.warning("La matriz de correlación solo está disponible para el dominio principal en esta versión.")
     
     # Select numeric columns for correlation
     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -226,10 +374,9 @@ def _render_corr_tab(df: pd.DataFrame):
             texttemplate="%{text}",
             hoverongaps = False))
         
-        fig_corr.update_layout(title="Mapa de Calor de Correlaciones Numéricas")
+        fig_corr.update_layout(title=f"Matriz de Correlación: {df['domain'].iloc[0]}")
         st.plotly_chart(fig_corr, use_container_width=True)
         st.session_state.figures['correlation_matrix'] = fig_corr
-        
 
         st.markdown("""
         **Guía de Interpretación:**

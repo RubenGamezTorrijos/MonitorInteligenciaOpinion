@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # Internal Imports
-from src.config.constants import APP_TITLE, APP_ICON, DATA_DIR
+from src.config.constants import APP_TITLE, APP_ICON, DATA_DIR, APP_SUBTITLE_TEMPLATE
 from src.views.styles import apply_custom_styles
 from src.views.sidebar import render_sidebar
 from src.views.dashboard import render_dashboard

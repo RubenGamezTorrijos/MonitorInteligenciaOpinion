@@ -158,3 +158,32 @@ def generate_refinement_comparison(df):
     ax.set_xticklabels([f"R{i+1}" for i in x], rotation=45)
     ax.legend()
     return fig
+
+def generate_time_series_comparison(df1, df2, label1, label2):
+    """Generates a comparison line chart for sentiment evolution."""
+    def process_series(df, label):
+        if 'date' not in df.columns: return None
+        d = df.copy()
+        d['date'] = pd.to_datetime(d['date'])
+        d = d.set_index('date').sort_index()
+        # Monthly or weekly resampling to smooth data
+        return d.resample('W')['sentimiento_score'].mean().reset_index()
+
+    s1 = process_series(df1, label1)
+    s2 = process_series(df2, label2)
+    
+    if s1 is None or s2 is None: return None
+    
+    fig, ax = plt.subplots(figsize=(12, 5))
+    
+    # Plot Series 1 (Green)
+    ax.plot(s1['date'], s1['sentimiento_score'], marker='o', linestyle='-', color='#22c55e', label=label1)
+    # Plot Series 2 (Blue)
+    ax.plot(s2['date'], s2['sentimiento_score'], marker='s', linestyle='--', color='#3b82f6', label=label2)
+    
+    ax.axhline(0, color='gray', linestyle=':', alpha=0.5)
+    ax.set_title(f"Evolución Comparada: {label1} vs {label2}")
+    ax.set_ylim(-1.1, 1.1)
+    ax.legend()
+    plt.xticks(rotation=45)
+    return fig

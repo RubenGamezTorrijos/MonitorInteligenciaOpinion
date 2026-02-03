@@ -72,7 +72,7 @@ class ReportExporter:
             "Matriz de Correlación": viz_engine.generate_correlation_heatmap(df)
         }
 
-    def generate_pdf_report(self, df: pd.DataFrame) -> bytes:
+    def generate_pdf_report(self, df: pd.DataFrame, df_comp: pd.DataFrame = None) -> bytes:
         """Creates a professional PDF report with executive KPIs and dashboard charts."""
         pdf = FPDF()
         pdf.add_page()
@@ -84,19 +84,46 @@ class ReportExporter:
         
         pdf.set_font("helvetica", "I", 12)
         pdf.set_text_color(100)
-        pdf.cell(0, 10, f"Análisis de Marca: {self.domain} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
+        report_title = f"Análisis de Marca: {self.domain} | Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        pdf.cell(0, 10, report_title, ln=True, align="C")
         pdf.ln(10)
         
         # --- Resumen Ejecutivo ---
         pdf.set_font("helvetica", "B", 16)
         pdf.set_text_color(0)
-        pdf.cell(0, 10, "Resumen Ejecutivo", ln=True)
-        pdf.set_font("helvetica", "", 12)
         
-        avg_score = df['sentimiento_score'].mean()
-        pdf.cell(0, 8, f"- Sentimiento Promedio: {avg_score:.2f}", ln=True)
-        pdf.cell(0, 8, f"- Total de Reseñas Analizadas: {len(df)}", ln=True)
-        pdf.cell(0, 8, f"- Porcentaje de Opiniones Positivas: {(len(df[df['sentimiento'] == 'positivo']) / len(df)):.1%}", ln=True)
+        if df_comp is not None and not df_comp.empty:
+            dom1 = df['domain'].iloc[0]
+            dom2 = df_comp['domain'].iloc[0]
+            pdf.cell(0, 10, f"Resumen Ejecutivo Comparativo: {dom1} vs {dom2}", ln=True)
+            pdf.set_font("helvetica", "", 12)
+            
+            # Domain 1
+            pdf.set_text_color(0, 100, 200) # Blue-ish
+            pdf.cell(0, 8, f"🟦 {dom1}:", ln=True)
+            pdf.set_text_color(0)
+            avg1 = df['sentimiento_score'].mean()
+            pdf.cell(0, 8, f"   - Sentimiento Promedio: {avg1:.2f}", ln=True)
+            pdf.cell(0, 8, f"   - % Positivo: {(len(df[df['sentimiento'] == 'positivo']) / len(df)):.1%}", ln=True)
+            
+            pdf.ln(2)
+            
+            # Domain 2
+            pdf.set_text_color(200, 100, 0) # Orange-ish
+            pdf.cell(0, 8, f"🟧 {dom2}:", ln=True)
+            pdf.set_text_color(0)
+            avg2 = df_comp['sentimiento_score'].mean()
+            pdf.cell(0, 8, f"   - Sentimiento Promedio: {avg2:.2f}", ln=True)
+            pdf.cell(0, 8, f"   - % Positivo: {(len(df_comp[df_comp['sentimiento'] == 'positivo']) / len(df_comp)):.1%}", ln=True)
+            
+        else:
+            pdf.cell(0, 10, "Resumen Ejecutivo", ln=True)
+            pdf.set_font("helvetica", "", 12)
+            avg_score = df['sentimiento_score'].mean()
+            pdf.cell(0, 8, f"- Sentimiento Promedio: {avg_score:.2f}", ln=True)
+            pdf.cell(0, 8, f"- Total de Reseñas Analizadas: {len(df)}", ln=True)
+            pdf.cell(0, 8, f"- Porcentaje de Opiniones Positivas: {(len(df[df['sentimiento'] == 'positivo']) / len(df)):.1%}", ln=True)
+        
         pdf.ln(10)
         
         # --- Visual Analytics (Plots) ---
@@ -104,7 +131,20 @@ class ReportExporter:
         pdf.cell(0, 10, "Análisis Visual de Reputación", ln=True)
         pdf.ln(5)
         
+        # Generate standard charts (for primary domain)
         report_charts = self._generate_report_charts(df)
+        
+        # If comparison, render comparison charts that are compatible with static export
+        if df_comp is not None and not df_comp.empty:
+            try:
+                # Add comparison time series if available
+                nom1 = df['domain'].iloc[0]
+                nom2 = df_comp['domain'].iloc[0]
+                fig_comp = viz_engine.generate_time_series_comparison(df, df_comp, nom1, nom2)
+                if fig_comp:
+                    report_charts["Evolución Comparativa"] = fig_comp
+            except:
+                pass
 
         for name, fig in report_charts.items():
             if fig is None: continue
@@ -116,13 +156,14 @@ class ReportExporter:
                 
                 img_buffer.seek(0)
                 
-                if pdf.get_y() > 180:
+                # Check for page break
+                if pdf.get_y() > 200:
                     pdf.add_page()
                 
                 pdf.set_font("helvetica", "B", 12)
                 pdf.cell(0, 10, f"Gráfica: {name}", ln=True)
                 
-                pdf.image(img_buffer, w=180)
+                pdf.image(img_buffer, w=170)
                 pdf.ln(10)
                 img_buffer.close()
             except Exception as e:

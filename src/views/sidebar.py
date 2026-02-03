@@ -57,7 +57,15 @@ def render_sidebar():
         
         if st.session_state.get('data_ready', False):
             df = st.session_state.df
+            
+            # Update label to include comparison if active
             analyzed_domain = st.session_state.get('analyzed_domain', domain_input)
+            comp_dom = st.session_state.get('compare_domain_name', None)
+            df_comp = st.session_state.get('df_comp', pd.DataFrame())
+            
+            if not df_comp.empty and comp_dom:
+                analyzed_domain = f"{analyzed_domain}_vs_{comp_dom}"
+                
             exporter = ReportExporter(analyzed_domain)
             
             # Use session state to hold export data and avoid re-generation on rerun
@@ -87,7 +95,9 @@ def render_sidebar():
             elif export_mode == "Informe PDF Pro":
                 if st.button("📄 Preparar Informe PDF"):
                     with st.spinner("Renderizando gráficas y generando informe..."):
-                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df))
+                        # Identify if comparison data is available
+                        comp_data = st.session_state.get('df_comp', None)
+                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df, comp_data))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Informe PDF Pro":
                     st.download_button(
@@ -100,8 +110,9 @@ def render_sidebar():
             elif export_mode == "Pack Completo (ZIP)":
                 if st.button("📦 Preparar Pack ZIP"):
                     with st.spinner("Empaquetando activos analíticos..."):
+                        comp_data = st.session_state.get('df_comp', None)
                         xlsx_data = exporter.to_excel(df)
-                        pdf_data = exporter.generate_pdf_report(df)
+                        pdf_data = exporter.generate_pdf_report(df, comp_data)
                         st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, df))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Pack Completo (ZIP)":
