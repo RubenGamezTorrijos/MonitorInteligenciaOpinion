@@ -22,9 +22,14 @@ def render_sidebar():
         max_reviews = st.slider(
             "Cantidad de reseñas",
             min_value=20,
-            max_value=200,
-            value=SCRAPE_MAX_REVIEWS,
-            step=20
+            max_value=500,
+            value=SCRAPE_MAX_REVIEWS if SCRAPE_MAX_REVIEWS <= 500 else 200,
+            step=20,
+            help="""
+            💡 **Recomendación Pro**: 
+            - **300 reseñas**: Es el punto óptimo para que los modelos de PageRank y Filtrado Colaborativo detecten patrones significativos.
+            - **500 reseñas**: Límite máximo para garantizar la velocidad de análisis y evitar bloqueos por seguridad/privacidad de la plataforma.
+            """
         )
         
         # Action Button

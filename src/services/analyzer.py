@@ -7,91 +7,132 @@ import numpy as np
 from typing import Dict, List, Optional
 from src.config.constants import SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
 
+from textblob import TextBlob
+from googletrans import Translator
+import pandas as pd
+import numpy as np
+from typing import Dict, List, Optional
+from src.config.constants import SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
+
+# New service imports
+from src.services.ir_engine import InvertedIndex, VectorSpaceModel
+from src.services.authority import UserAuthorityService
+from src.services.recommender import CollaborativeFilteringService
+
 class SentimentAnalyzerES:
-    """Service specialized for sentiment analysis and categorization of Spanish reviews."""
+    """Hybrid Multidimensional Sentiment Analysis System."""
     
     def __init__(self):
         self.translator = Translator()
-        self.positive_words_es = {
+        self.positive_seed = [
             'excelente', 'perfecto', 'genial', 'maravilloso', 'fantástico',
-            'recomiendo', 'satisfecho', 'contento', 'feliz', 'agradecido',
-            'rápido', 'eficiente', 'útil', 'valioso', 'agradable', 'fácil',
-            'bueno', 'buena', 'correcto', 'adecuado', 'perfectamente',
-            'cumple', 'funciona', 'resolvió', 'solucionó', 'ayudó',
-            'profesional', 'amable', 'atento', 'respetuoso', 'educado'
-        }
-
-        self.negative_words_es = {
+            'recomiendo', 'satisfecho', 'contento', 'feliz', 'bueno', 'buena',
+            'rápido', 'eficiente', 'útil', 'valioso', 'perfectamente', 'cumple',
+            'funciona', 'amable', 'atento'
+        ]
+        self.negative_seed = [
             'pésimo', 'horrible', 'terrible', 'decepcionado', 'decepción',
-            'problema', 'error', 'defectuoso', 'malo', 'mala', 'lento',
-            'difícil', 'complicado', 'frustrante', 'inútil', 'pobre',
-            'desastre', 'estafa', 'fraude', 'estafadores', 'mentira',
-            'engañado', 'timado', 'abusivo', 'abusadores', 'desleal',
-            'irresponsable', 'negligente', 'incompetente', 'ineficiente',
-            'desorganizado', 'caótico', 'catastrófico',
-            'insatisfecho', 'enfadado', 'molesto', 'indignado', 'furia'
-        }
-
-        # Category mapping from notebook
-        self.categorias_palabras = {
-            'cliente': 'Servicio', 'atención': 'Servicio', 'servicio': 'Servicio',
-            'contacto': 'Comunicación', 'respuesta': 'Comunicación', 'llamada': 'Comunicación',
-            'entrega': 'Logística', 'pedido': 'Logística', 'envío': 'Logística',
-            'repartidor': 'Logística', 'transporte': 'Logística', 'locker': 'Logística',
-            'problema': 'Queja', 'decepción': 'Queja', 'error': 'Queja', 'fallo': 'Queja',
-            'estafa': 'Fraude', 'fraude': 'Fraude', 'estafadores': 'Fraude',
-            'devolución': 'Postventa', 'reembolso': 'Postventa', 'garantía': 'Postventa',
-            'tiempo': 'Tiempo', 'espera': 'Tiempo', 'retraso': 'Tiempo', 'urgente': 'Tiempo'
-        }
+            'malo', 'mala', 'lento', 'difícil', 'inútil', 'desastre', 'estafa',
+            'fraude', 'irresponsable', 'negligente', 'incompetente', 'insatisfecho',
+            'molesto', 'error', 'defectuoso'
+        ]
+        
+        # Services
+        self.authority_service = UserAuthorityService()
+        self.cf_service = CollaborativeFilteringService()
+        self.ir_model = None
 
     def analyze_batch(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Processes a full DataFrame and adds sentiment/category columns."""
-        results = df['texto_sin_stopwords'].apply(lambda x: self._get_combined_sentiment(x))
-        sentiment_df = pd.DataFrame(results.tolist())
+        """Processes reviews using the hybrid pipeline."""
+        if df.empty: return df
+
+        # 1. Build IR Engine
+        idx = InvertedIndex()
+        for i, row in df.iterrows():
+            idx.add_document(i, row['tokens'])
         
-        # Add labels to categories
-        df = pd.concat([df, sentiment_df], axis=1)
+        self.ir_model = VectorSpaceModel(idx)
+        pos_query_vec = self.ir_model.vectorize(self.positive_seed)
+        neg_query_vec = self.ir_model.vectorize(self.negative_seed)
+
+        # 2. Base Sentiment (TF-IDF + Cosine Similarity)
+        df['base_score'] = df['tokens'].apply(
+            lambda x: self.ir_model.analyze_sentiment(self.ir_model.vectorize(x), pos_query_vec, neg_query_vec)
+        )
+
+        # 3. User Authority (PageRank)
+        # We simulate "utility" interactions if not present (simple network of similar users)
+        # Or better: use 'user_id' to build a contribution graph
+        interactions = self._generate_simulated_interactions(df)
+        self.authority_service.calculate_authority(interactions)
+        df['user_authority'] = df['user_id'].apply(self.authority_service.get_user_weight)
+
+        # 4. Collaborative Filtering (Pearson)
+        # We need a score to fit. We'll use the base_score combined with rating.
+        df['temp_score'] = (df['base_score'] + (df['rating'] - 3) / 2) / 2
+        self.cf_service.fit(df.rename(columns={'temp_score': 'sentimiento_score'}))
+        
+        # 5. Hybrid Calculation
+        final_results = []
+        for _, row in df.iterrows():
+            # CF prediction for personalization
+            cf_pred = self.cf_service.predict_user_item(row['user_id'], row['product_id'])
+            
+            # Weighted average: (Base * Authority + CF) / 2
+            # We use authority to boost/reduce the influence of the base score
+            # Normalize authority to be around 1.0
+            auth_norm = row['user_authority'] / df['user_authority'].mean() if not df.empty else 1.0
+            
+            # Final score calculation
+            final_score = (row['base_score'] * auth_norm + cf_pred) / 2
+            
+            # Constraints
+            final_score = max(-1.0, min(1.0, final_score))
+            
+            label = 'positivo' if final_score > 0.1 else ('negativo' if final_score < -0.1 else 'neutral')
+            confidence = abs(final_score)
+            
+            final_results.append({
+                'sentimiento_score': final_score,
+                'sentimiento': label,
+                'confianza': confidence,
+                'authority_level': auth_norm
+            })
+
+        res_df = pd.DataFrame(final_results)
+        df = pd.concat([df.reset_index(drop=True), res_df], axis=1)
+        
+        # Category classification (Existing logic)
         df['categoria_predom'] = df['tokens'].apply(self._get_dominant_category)
+        
         return df
 
+    def _generate_simulated_interactions(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Simulates a user network based on same-item reviews to enable PageRank."""
+        interactions = []
+        # Users reviewing the same product create "influence" links (simplified)
+        for prod in df['product_id'].unique():
+            users = df[df['product_id'] == prod]['user_id'].unique()
+            for i in range(len(users)):
+                for j in range(i + 1, len(users)):
+                    interactions.append({'source_user': users[i], 'target_user': users[j]})
+        
+        if not interactions:
+            return pd.DataFrame(columns=['source_user', 'target_user'])
+        return pd.DataFrame(interactions)
+
     def _get_dominant_category(self, tokens: List[str]) -> str:
-        """Identifies the most frequent category in a review."""
-        cats = [self.categorias_palabras.get(w) for w in tokens if w in self.categorias_palabras]
-        if not cats: return "Otros"
-        return max(set(cats), key=cats.count)
-
-    def _get_combined_sentiment(self, text: str) -> Dict:
-        """Hybrid sentiment logic from notebook."""
-        if not text or len(str(text).strip()) < 5:
-            return {'sentimiento_score': 0, 'sentimiento': 'neutral', 'confianza': 0}
-
-        # 1. TextBlob Approach (via Translation)
-        try:
-            translated = self.translator.translate(text, src='es', dest='en')
-            blob = TextBlob(translated.text)
-            score = blob.sentiment.polarity
-            confidence = abs(score)
-            
-            if confidence > 0.4: # Threshold from notebook logic
-                label = 'positivo' if score > 0.2 else ('negativo' if score < -0.2 else 'neutral')
-                return {'sentimiento_score': score, 'sentimiento': label, 'confianza': confidence}
-        except:
-            pass
-
-        # 2. Dictionary Approach (Fallback)
-        words = str(text).lower().split()
-        pos_count = sum(1 for w in words if w in self.positive_words_es)
-        neg_count = sum(1 for w in words if w in self.negative_words_es)
-        
-        total = pos_count + neg_count
-        if total == 0:
-            return {'sentimiento_score': 0, 'sentimiento': 'neutral', 'confianza': 0}
-            
-        dict_score = (pos_count - neg_count) / total
-        label = 'positivo' if dict_score > 0.3 else ('negativo' if dict_score < -0.3 else 'neutral')
-        
-        return {
-            'sentimiento_score': dict_score,
-            'sentimiento': label,
-            'confianza': min(abs(dict_score) * 1.5, 1.0)
+        categorias_palabras = {
+            'cliente': 'Servicio al Cliente', 'atención': 'Servicio al Cliente', 'servicio': 'Servicio al Cliente',
+            'soporte': 'Servicio al Cliente', 'ayuda': 'Servicio al Cliente', 'amabilidad': 'Servicio al Cliente',
+            'entrega': 'Logística y Envío', 'pedido': 'Logística y Envío', 'envío': 'Logística y Envío',
+            'transporte': 'Logística y Envío', 'retraso': 'Logística y Envío', 'paquete': 'Logística y Envío',
+            'problema': 'Incidencias', 'error': 'Incidencias', 'fallo': 'Incidencias', 'roto': 'Incidencias',
+            'estafa': 'Seguridad y Fraude', 'fraude': 'Seguridad y Fraude', 'engaño': 'Seguridad y Fraude',
+            'precio': 'Económico', 'dinero': 'Económico', 'coste': 'Económico', 'barato': 'Económico',
+            'calidad': 'Producto', 'material': 'Producto', 'funciona': 'Producto', 'útil': 'Producto',
+            'devolución': 'Postventa', 'reembolso': 'Postventa', 'garantía': 'Postventa'
         }
+        cats = [categorias_palabras.get(w) for w in tokens if w in categorias_palabras]
+        if not cats: return "Opinión General"
+        return max(set(cats), key=cats.count)

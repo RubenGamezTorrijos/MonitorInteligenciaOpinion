@@ -6,7 +6,7 @@ import os
 APP_TITLE = "Monitor de Opinión Inteligente Trustpilot"
 APP_SUBTITLE = "Professional Sentiment & Brand Analytics"
 APP_ICON = "📊"
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.0.1"
 
 # Scraper Configuration
 TRUSTPILOT_BASE_URL = "https://es.trustpilot.com/review/"

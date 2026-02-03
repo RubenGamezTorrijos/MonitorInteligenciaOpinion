@@ -118,6 +118,33 @@ class TrustpilotScraper:
             
             if not text: return None
 
+            # User selectors
+            user_selectors = [
+                'span[data-consumer-name-typography="true"]',
+                'div[data-consumer-name-typography="true"]',
+                'span.typography_appearance-default__D9m_F.typography_color-inherit__D_i_t'
+            ]
+            user_name = "Anónimo"
+            for selector in user_selectors:
+                user_name = self.safe_extract(element, selector)
+                if user_name: break
+
+            # Rating selectors
+            rating = 3 # Default
+            try:
+                rating_img = element.select_one('img[alt^="Rated"]')
+                if rating_img:
+                    rating_match = re.search(r'Rated (\d)', rating_img['alt'])
+                    if rating_match:
+                        rating = int(rating_match.group(1))
+                else:
+                    # Fallback for different Trustpilot versions
+                    rating_div = element.select_one('div[data-rating]')
+                    if rating_div:
+                        rating = int(rating_div.get('data-rating', 3))
+            except Exception:
+                pass
+
             # Date selectors
             date_selectors = ['time', 'span[data-service-review-date-time-ago]', 'div.review-date']
             date_str = ""
@@ -129,7 +156,11 @@ class TrustpilotScraper:
             keywords = self.extract_keywords(text)
 
             return {
+                "user_id": user_name,  # Using name as ID for simplicity
+                "user": user_name,
                 "text": text,
+                "rating": rating,
+                "product_id": self.domain, # Using domain as item ID
                 "date": date_str if date_str else datetime.now().strftime('%Y-%m-%d'),
                 "keywords": ", ".join(keywords) if keywords else "Ninguna",
                 "domain": self.domain

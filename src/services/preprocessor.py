@@ -35,7 +35,12 @@ class SpanishTextPreprocessor:
             'hacer', 'hace', 'hice', 'hicieron', 'hecho', 'decir', 'dice',
             'dijo', 'dijeron', 'poder', 'puede', 'puedo', 'podemos', 'poner',
             'pone', 'puesto', 'ver', 'veo', 'visto', 'dar', 'da', 'dado',
-            'saber', 'sé', 'sabe', 'supuesto', 'querer', 'quiere', 'quería'
+            'saber', 'sé', 'sabe', 'supuesto', 'querer', 'quiere', 'quería',
+            'tenía', 'tenían', 'teniendo', 'tengo', 'tienes', 'tiene', 'tenemos',
+            'había', 'habían', 'habiendo', 'hay', 'hubo', 'estaba', 'estaban',
+            'ser', 'sido', 'siendo', 'soy', 'eres', 'es', 'somos', 'son',
+            'fue', 'fueron', 'era', 'eran', 'ir', 'voy', 'va', 'vamos', 'van',
+            'fui', 'fuimos', 'iba', 'iban'
         }
         self.stop_words.update(extra_stopwords)
 
@@ -48,10 +53,9 @@ class SpanishTextPreprocessor:
         # Remove URLs/mentions
         text = re.sub(r'https?://\S+|www\.\S+', '', text)
         text = re.sub(r'@\w+|#\w+', '', text)
-        # Preserve only Spanish letters, spaces, ñ, and accents (as in notebook)
+        # Preserve only Spanish letters, spaces, ñ, and accents
         text = re.sub(r'[^a-záéíóúüñ\s]', ' ', text)
-        # Remove digits and extra spaces
-        text = re.sub(r'\d+', '', text)
+        # Remove extra spaces
         text = ' '.join(text.split())
         return text
 
