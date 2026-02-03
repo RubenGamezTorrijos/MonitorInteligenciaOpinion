@@ -16,7 +16,7 @@ from src.services.analyzer import SentimentAnalyzerES
 # --- Optimized Service Helpers with Caching ---
 @st.cache_data(show_spinner=False)
 def run_analysis_pipeline(domain: str, max_rev: int):
-    """Cached pipeline to avoid redundant scraping and processing."""
+    """Cached pipeline with dynamic brand noise filtering."""
     # 1. Scraping
     scraper = TrustpilotScraper(domain)
     df_raw = scraper.scrape_reviews(max_reviews=max_rev)
@@ -24,12 +24,12 @@ def run_analysis_pipeline(domain: str, max_rev: int):
     if df_raw.empty:
         return None
         
-    # 2. Preprocessing (Notebook Alignment)
+    # 2. Preprocessing (Dynamic Noise Filtering)
     preprocessor = SpanishTextPreprocessor()
-    processed_results = [preprocessor.process_pipeline(text) for text in df_raw['text']]
+    processed_results = [preprocessor.process_pipeline(text, domain=domain) for text in df_raw['text']]
     df_proc = pd.DataFrame(processed_results)
     
-    # Merge results (avoiding duplicate 'original' column)
+    # Merge results
     df_merged = pd.concat([df_raw, df_proc.drop(columns=['original'])], axis=1)
     
     # 3. Sentiment & Categorization Analysis
@@ -41,6 +41,8 @@ def run_analysis_pipeline(domain: str, max_rev: int):
 # Session State Initialization
 if 'df' not in st.session_state:
     st.session_state.df = pd.DataFrame()
+if 'df_comp' not in st.session_state:
+    st.session_state.df_comp = pd.DataFrame()
 if 'data_ready' not in st.session_state:
     st.session_state.data_ready = False
 
@@ -52,7 +54,7 @@ def main():
     apply_custom_styles()
     
     # Sidebar Navigation & Controls
-    domain, max_rev, analyze_clicked = render_sidebar()
+    domain, max_rev, analyze_clicked, compare_mode, compare_domain = render_sidebar()
     
     # Analysis Execution
     if analyze_clicked:
@@ -62,9 +64,18 @@ def main():
                 st.session_state.df = result_df
                 st.session_state.analyzed_domain = domain
                 st.session_state.data_ready = True
-                st.success(f"✅ Análisis completado para {domain}!")
+                
+                # Comparison mode
+                if compare_mode and compare_domain:
+                    with st.spinner(f"⚔️ Comparando con {compare_domain}..."):
+                        st.session_state.df_comp = run_analysis_pipeline(compare_domain, max_rev)
+                        st.session_state.compare_domain_name = compare_domain
+                else:
+                    st.session_state.df_comp = pd.DataFrame()
+                    
+                st.success(f"✅ Análisis completado!")
             else:
-                st.error("No se pudieron extraer reseñas. Verifica el dominio.")
+                st.error("No se pudieron extraer reseñas. Verifica el dominio principal.")
 
     # Main Content Area
     st.title(f"{APP_ICON} {APP_TITLE}")
@@ -72,7 +83,7 @@ def main():
     st.markdown(f"**Analítica Profesional de Reputación Online** | Dominio analizado: `{active_dom}`")
     
     if st.session_state.data_ready:
-        render_dashboard(st.session_state.df)
+        render_dashboard(st.session_state.df, st.session_state.df_comp)
     else:
         # Welcome Screen / Empty State
         st.info("👈 Introduce un dominio en el menú lateral e inicia el análisis.")

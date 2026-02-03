@@ -12,7 +12,7 @@ import io
 from src.config.constants import TABS, SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
 from src.services.viz_engine import generate_authority_scatter, generate_refinement_comparison
 
-def render_dashboard(df: pd.DataFrame):
+def render_dashboard(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     """Orchestrates the rendering of horizontal tabs and their content."""
     
     if df.empty:
@@ -24,25 +24,31 @@ def render_dashboard(df: pd.DataFrame):
         st.session_state.figures = {}
 
     # Create Modern Horizontal Tabs
-    tab_overview, tab_sentiment, tab_intel, tab_trends, tab_insights, tab_corr = st.tabs(TABS)
+    tab_list = st.tabs(TABS)
     
-    with tab_overview:
+    with tab_list[0]:
         _render_overview_tab(df)
         
-    with tab_sentiment:
+    with tab_list[1]:
         _render_sentiment_tab(df)
         
-    with tab_intel:
+    with tab_list[2]:
         _render_intel_tab(df)
         
-    with tab_trends:
+    with tab_list[3]:
         _render_trends_tab(df)
 
-    with tab_insights:
+    with tab_list[4]:
         _render_advanced_insights_tab(df)
         
-    with tab_corr:
+    with tab_list[5]:
         _render_corr_tab(df)
+
+    with tab_list[6]:
+        if not df_comp.empty:
+            _render_comparison_tab(df, df_comp)
+        else:
+            st.info("💡 **Tip:** Activa el 'Modo Comparativa' en el lateral para ver el benchmark entre dos marcas.")
 
 def _render_overview_tab(df: pd.DataFrame):
     st.subheader("📈 Resumen Ejecutivo")
@@ -224,6 +230,7 @@ def _render_corr_tab(df: pd.DataFrame):
         st.plotly_chart(fig_corr, use_container_width=True)
         st.session_state.figures['correlation_matrix'] = fig_corr
         
+
         st.markdown("""
         **Guía de Interpretación:**
         - **1.0**: Correlación positiva perfecta.
@@ -232,4 +239,67 @@ def _render_corr_tab(df: pd.DataFrame):
         """)
     else:
         st.warning("No hay suficientes variables numéricas para realizar la matriz de correlación.")
+
+def _render_comparison_tab(df1: pd.DataFrame, df2: pd.DataFrame):
+    dom1 = df1['domain'].iloc[0] if not df1.empty else "Marca 1"
+    dom2 = df2['domain'].iloc[0] if not df2.empty else "Marca 2"
+    
+    st.subheader(f"⚔️ Benchmarking: {dom1} vs {dom2}")
+    
+    # 1. Comparative Metrics
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"### 🚩 KPI: {dom1}")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Rating Medio", f"{df1['rating'].mean():.2f}")
+        m2.metric("Sentimiento", f"{df1['sentimiento_score'].mean():.2f}")
+        m3.metric("% Positivo", f"{(len(df1[df1['sentimiento']=='positivo'])/len(df1)):.1%}")
+
+    with col2:
+        st.write(f"### 🏁 KPI: {dom2}")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Rating Medio", f"{df2['rating'].mean():.2f}")
+        m2.metric("Sentimiento", f"{df2['sentimiento_score'].mean():.2f}")
+        m3.metric("% Positivo", f"{(len(df2[df2['sentimiento']=='positivo'])/len(df2)):.1%}")
+
+    st.divider()
+
+    # 2. Visual Comparison
+    st.write("### 📊 Distribución de Sentimiento Comparada")
+    
+    # Prepare data for comparison chart
+    df1_dist = df1['sentimiento'].value_counts(normalize=True).reset_index()
+    df1_dist.columns = ['Sentimiento', 'Proporción']
+    df1_dist['Marca'] = dom1
+
+    df2_dist = df2['sentimiento'].value_counts(normalize=True).reset_index()
+    df2_dist.columns = ['Sentimiento', 'Proporción']
+    df2_dist['Marca'] = dom2
+
+    comp_df = pd.concat([df1_dist, df2_dist])
+
+    fig_comp = px.bar(comp_df, x='Sentimiento', y='Proporción', color='Marca', barmode='group',
+                     color_discrete_sequence=['#22c55e', '#636efa'],
+                     title="Porcentaje de Sentimiento por Marca")
+    st.plotly_chart(fig_comp, use_container_width=True)
+
+    st.divider()
+
+    # 3. Key Differences Table
+    st.write("### 🔍 Análisis de Diferencias Críticas")
+    
+    # Simple word comparison
+    tokens1 = set([t for sublist in df1['tokens'] for t in sublist])
+    tokens2 = set([t for sublist in df2['tokens'] for t in sublist])
+    
+    unique1 = list(tokens1 - tokens2)[:10]
+    unique2 = list(tokens2 - tokens1)[:10]
+    
+    diff_col1, diff_col2 = st.columns(2)
+    with diff_col1:
+        st.info(f"Temas únicos de **{dom1}**")
+        st.write(", ".join(unique1))
+    with diff_col2:
+        st.info(f"Temas únicos de **{dom2}**")
+        st.write(", ".join(unique2))
 

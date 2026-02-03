@@ -13,11 +13,22 @@ def render_sidebar():
         # Domain Input Section
         st.subheader("🌐 Configuración de Marca")
         domain_input = st.text_input(
-            "Dominio a analizar",
+            "Dominio Principal",
             placeholder="ej: amazon.es",
             value=DEFAULT_DOMAIN,
-            help="Introduce el nombre tal como aparece en Trustpilot. Ejemplo: https://es.trustpilot.com/review/'nombre_empresa'"
+            help="Introduce el nombre tal como aparece en Trustpilot."
         )
+
+        with st.expander("⚔️ Modo Comparativa (Opcional)"):
+            compare_mode = st.checkbox("Activar comparación", value=st.session_state.get('compare_mode', False))
+            compare_domain = st.text_input(
+                "Segundo Dominio",
+                placeholder="ej: pccomponentes.com",
+                value=st.session_state.get('compare_domain', ""),
+                disabled=not compare_mode
+            )
+            st.session_state.compare_mode = compare_mode
+            st.session_state.compare_domain = compare_domain
         
         max_reviews = st.slider(
             "Cantidad de reseñas",
@@ -112,4 +123,4 @@ def render_sidebar():
         st.caption(f"© {current_year} Business Intelligence v.{APP_VERSION}")
         st.caption("📢 **Nota:** Herramienta desarrollada con fines educativos universitarios.")
         
-    return domain_input, max_reviews, analyze_clicked
+    return domain_input, max_reviews, analyze_clicked, compare_mode, compare_domain

@@ -31,7 +31,7 @@ PDF_REPORT_SUFFIX = "_intelligence_report.pdf"
 ZIP_PACKAGE_SUFFIX = "_complete_box.zip"
 
 # UI Labels (ES)
-TABS = ["📊 Resumen", "😊 Sentimiento", "☁️ Palabras Clave", "📈 Evolución", "🧠 Insights Pro", "📉 Correlación"]
+TABS = ["📊 Resumen", "😊 Sentimiento", "☁️ Palabras Clave", "📈 Evolución", "🧠 Insights Pro", "📉 Correlación", "⚔️ Comparativa"]
 SIDEBAR_HEADER = "⚙️ Panel de Control"
 ANALYZE_BUTTON = "🚀 Iniciar Inteligencia de Opinión"
 

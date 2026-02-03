@@ -59,17 +59,24 @@ class SpanishTextPreprocessor:
         text = ' '.join(text.split())
         return text
 
-    def remove_stopwords(self, text: str) -> str:
-        """Removes stopwords and short words."""
+    def remove_stopwords(self, text: str, domain: Optional[str] = None) -> str:
+        """Removes stopwords, short words, and optionally domain-specific noise."""
         if not text: return ""
         tokens = text.split()
-        filtered = [w for w in tokens if w not in self.stop_words and len(w) > 2]
+        
+        current_stops = self.stop_words.copy()
+        if domain:
+            # Add domain name (e.g., 'ikea', 'amazon') and its parts to temporary stops
+            domain_clean = re.sub(r'[^a-z]', ' ', domain.lower())
+            current_stops.update(domain_clean.split())
+            
+        filtered = [w for w in tokens if w not in current_stops and len(w) > 2]
         return ' '.join(filtered)
 
-    def process_pipeline(self, text: str) -> Dict:
-        """Executes full NLP pipeline from the notebook."""
+    def process_pipeline(self, text: str, domain: Optional[str] = None) -> Dict:
+        """Executes full NLP pipeline with optional domain filtering."""
         cleaned = self.clean_text(text)
-        no_stopwords = self.remove_stopwords(cleaned)
+        no_stopwords = self.remove_stopwords(cleaned, domain=domain)
         tokens = no_stopwords.split()
         
         return {
