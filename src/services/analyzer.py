@@ -61,15 +61,16 @@ class SentimentAnalyzerES:
         )
 
         # 3. User Authority (PageRank)
-        # We simulate "utility" interactions if not present (simple network of similar users)
-        # Or better: use 'user_id' to build a contribution graph
         interactions = self._generate_simulated_interactions(df)
         self.authority_service.calculate_authority(interactions)
         df['user_authority'] = df['user_id'].apply(self.authority_service.get_user_weight)
 
         # 4. Collaborative Filtering (Pearson)
-        # We need a score to fit. We'll use the base_score combined with rating.
-        df['temp_score'] = (df['base_score'] + (df['rating'] - 3) / 2) / 2
+        # Re-balanced temp_score: 50% explicit rating, 50% base semantic score
+        # Rating normalized to [-1, 1]: (rating - 3) / 2
+        df['rating_score'] = (df['rating'] - 3) / 2
+        df['temp_score'] = (df['base_score'] * 0.5) + (df['rating_score'] * 0.5)
+        
         self.cf_service.fit(df.rename(columns={'temp_score': 'sentimiento_score'}))
         
         # 5. Hybrid Calculation
@@ -78,18 +79,24 @@ class SentimentAnalyzerES:
             # CF prediction for personalization
             cf_pred = self.cf_service.predict_user_item(row['user_id'], row['product_id'])
             
-            # Weighted average: (Base * Authority + CF) / 2
-            # We use authority to boost/reduce the influence of the base score
-            # Normalize authority to be around 1.0
+            # Normalize authority to influence the semantic part
             auth_norm = row['user_authority'] / df['user_authority'].mean() if not df.empty else 1.0
             
-            # Final score calculation
-            final_score = (row['base_score'] * auth_norm + cf_pred) / 2
+            # Hybrid Formula v2.1:
+            # 50% normalized rating + 30% semantic text (weighted by auth) + 20% CF personalization
+            final_score = (row['rating_score'] * 0.50) + (row['base_score'] * auth_norm * 0.30) + (cf_pred * 0.20)
             
             # Constraints
             final_score = max(-1.0, min(1.0, final_score))
             
-            label = 'positivo' if final_score > 0.1 else ('negativo' if final_score < -0.1 else 'neutral')
+            # Adjusted Thresholds for Trustpilot ecosystem (more sensitive)
+            if final_score >= 0.05:
+                label = 'positivo'
+            elif final_score <= -0.05:
+                label = 'negativo'
+            else:
+                label = 'neutral'
+                
             confidence = abs(final_score)
             
             final_results.append({

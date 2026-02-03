@@ -1,5 +1,5 @@
-# 📄 Memoria Técnica: Análisis de Reseñas de Amazon España (Trustpilot)
-## 💡 Monitor de Inteligencia de Opinión - Proyecto Híbrido Multidimensional v2.0
+# 📄 Memoria Técnica: Análisis de Reseñas E-commerce (Trustpilot)
+## 💡 Monitor de Inteligencia de Opinión - Proyecto Híbrido Multidimensional v2.1
 
 ---
 
@@ -38,11 +38,21 @@ El sistema modela a los usuarios como una red de interacción:
 *   **Factor de Amortiguación**: $d = 0.85$.
 *   **Resultado**: Cada reseña se pondera por la "autoridad" calculada del emisor, reduciendo el ruido de cuentas spam o irrelevantes.
 
-### 🤖 Fase 3: Predicción y Personalización (Filtrado Colaborativo)
-Se aplican dos enfoques para la veracidad de los datos:
-1.  **User-to-User**: Utiliza la **Correlación de Pearson** para predecir el score de un usuario basándose en perfiles similares.
-2.  **Item-to-Item**: Ajusta la puntuación esperada basándose en la similitud intrínseca de las experiencias de producto.
-Esto permite "llenar vacíos" en reseñas incompletas mediante la fórmula de predicción de scores $p_{u,i}$.
+### 🤖 Fase 3: Predicción y Personalización (Fórmula Híbrida v2.1)
+Se ha implementado una arquitectura de consenso para evitar la neutralización de scores y asegurar la diferenciación entre marcas:
+
+#### **Fórmula de Consenso Equilibrada**
+El sistema calcula el **Score Final** mediante una ponderación tripartita:
+1.  **Puntuación Explícita (50%)**: Se deriva directamente de las estrellas (1-5) normalizadas al rango $[-1, 1]$. Es el núcleo de la veracidad del dato.
+2.  **Análisis Semántico IR (30%)**: Basado en la similitud del coseno (Espacio Vectorial), ajustado por la **Autoridad del Revisor** (PageRank).
+3.  **Filtrado Colaborativo (20%)**: Proporciona el componente de personalización y veracidad social mediante la Correlación de Pearson.
+
+$$\text{Final Score} = (\text{Rating Score} \times 0.5) + (\text{Base Score} \times \text{Auth}_{norm} \times 0.3) + (\text{CF Pred} \times 0.2)$$
+
+#### **Diferenciación de Marca**
+Gracias a este re-equilibrio, el sistema detecta con precisión la brecha reputacional:
+- **Dominios Críticos**: Marcas con promedios de 1.1 estrellas (ej. Amazon) muestran ahora perfiles claramente negativos, no contaminados por el "ruido léxico" común.
+- **Dominios Saludables**: Marcas con valoraciones equilibradas mantienen sus KPIs positivos o neutrales según la realidad del dato.
 
 ---
 
