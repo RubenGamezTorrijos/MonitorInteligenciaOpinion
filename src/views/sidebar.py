@@ -110,5 +110,6 @@ def render_sidebar():
         current_year = datetime.now().year
         from src.config.constants import APP_VERSION
         st.caption(f"© {current_year} Business Intelligence v.{APP_VERSION}")
+        st.caption("📢 **Nota:** Herramienta desarrollada con fines educativos universitarios.")
         
     return domain_input, max_reviews, analyze_clicked
