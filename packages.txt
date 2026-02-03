@@ -1,1 +1,3 @@
-es-core-news-sm
+# System packages for Streamlit Cloud
+# This file is for apt-get packages only
+# Python packages go in requirements.txt
