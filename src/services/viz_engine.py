@@ -3,7 +3,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import io
-from wordcloud import WordCloud
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib.colors as mcolors
 
 def generate_sentiment_pie(df):
     counts = df['sentimiento'].value_counts()
@@ -88,23 +89,61 @@ def generate_correlation_heatmap(df):
     cols = [c for c in numeric_cols if c in df.columns]
     
     if len(cols) > 1:
-        corr = df[cols].corr()
-        fig, ax = plt.subplots(figsize=(8, 6))
-        # Consistent with dashboard Heatmap scale
-        sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, ax=ax)
-        ax.set_title("Matriz de Correlación")
-        return fig
+        # Avoid NaN errors by dropping constant columns
+        df_corr = df[cols].copy()
+        valid_cols = [c for c in cols if df_corr[c].std() > 0]
+        
+        if len(valid_cols) > 1:
+            corr = df_corr[valid_cols].corr()
+            fig, ax = plt.subplots(figsize=(8, 6))
+            sns.heatmap(corr, annot=True, cmap='RdBu_r', center=0, ax=ax)
+            ax.set_title("Matriz de Correlación")
+            return fig
     return None
 
 def generate_wordcloud_static(df):
-    all_text = " ".join(df['texto_limpio'].fillna('').astype(str))
-    if not all_text.strip(): return None
+    """Generates a wordcloud with colors based on the average sentiment of each word."""
+    all_tokens_reviews = []
+    for _, row in df.iterrows():
+        tokens = row.get('tokens', [])
+        score = row.get('sentimiento_score', 0)
+        for t in tokens:
+            all_tokens_reviews.append((t, score))
+            
+    if not all_tokens_reviews: return None
     
-    wc = WordCloud(width=800, height=400, background_color='white', colormap='Greens').generate(all_text)
-    fig, ax = plt.subplots(figsize=(10, 5))
+    # Calculate average sentiment per word
+    word_scores = {}
+    word_counts = {}
+    for word, score in all_tokens_reviews:
+        word_scores[word] = word_scores.get(word, 0) + score
+        word_counts[word] = word_counts.get(word, 0) + 1
+        
+    avg_word_sentiment = {w: word_scores[w] / word_counts[w] for w in word_scores}
+    frequencies = word_counts
+    
+    # Custom color function: Red (Neg) -> Orange -> Ochre (Neu) -> Green -> Forest Green (Pos)
+    def sentiment_color_func(word, font_size, position, orientation, random_state=None, **kwargs):
+        sentiment = avg_word_sentiment.get(word, 0)
+        # Custom palette for better contrast (Premium Look)
+        if sentiment > 0.4:
+            return "#15803d" # Forest Green (Very Good)
+        elif sentiment > 0.1:
+            return "#22c55e" # Green (Good)
+        elif sentiment > -0.1:
+            return "#a16207" # Dark Yellow / Ochre (Neutral)
+        elif sentiment > -0.4:
+            return "#ea580c" # Orange (Bad)
+        else:
+            return "#991b1b" # Dark Red (Critical)
+
+    wc = WordCloud(width=1200, height=600, background_color='white', 
+                  max_words=100, color_func=sentiment_color_func).generate_from_frequencies(frequencies)
+    
+    fig, ax = plt.subplots(figsize=(15, 7))
     ax.imshow(wc, interpolation='bilinear')
     ax.axis('off')
-    ax.set_title("Nube de Palabras")
+    ax.set_title("Nube de Inteligencia Semántica (Color por Sentimiento)")
     return fig
 
 def generate_drivers_chart(df):
@@ -185,5 +224,41 @@ def generate_time_series_comparison(df1, df2, label1, label2):
     ax.set_title(f"Evolución Comparada: {label1} vs {label2}")
     ax.set_ylim(-1.1, 1.1)
     ax.legend()
+    plt.xticks(rotation=45)
+    return fig
+
+def generate_sentiment_comparison_bar(df1, df2, label1, label2):
+    """Generates a grouped bar chart for sentiment distribution comparison."""
+    def get_dist(df, label):
+        d = df['sentimiento'].value_counts(normalize=True).reset_index()
+        d.columns = ['Sentimiento', 'Proporción']
+        d['Marca'] = label
+        return d
+
+    comp_df = pd.concat([get_dist(df1, label1), get_dist(df2, label2)])
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.barplot(data=comp_df, x='Sentimiento', y='Proporción', hue='Marca', 
+                palette=['#22c55e', '#3b82f6'], ax=ax)
+    
+    ax.set_title("Distribución de Sentimiento Comparada (%)")
+    ax.set_ylim(0, 1.0)
+    return fig
+
+def generate_category_comparison_bar(df1, df2, label1, label2):
+    """Generates a grouped bar chart for category distribution comparison."""
+    def get_dist(df, label):
+        d = df['categoria_predom'].value_counts(normalize=True).reset_index()
+        d.columns = ['Categoría', 'Proporción']
+        d['Marca'] = label
+        return d
+
+    comp_df = pd.concat([get_dist(df1, label1), get_dist(df2, label2)])
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.barplot(data=comp_df, x='Categoría', y='Proporción', hue='Marca', 
+                palette=['#22c55e', '#3b82f6'], ax=ax)
+    
+    ax.set_title("Distribución de Temas Comparada (%)")
     plt.xticks(rotation=45)
     return fig

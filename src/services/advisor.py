@@ -47,17 +47,58 @@ class StrategicAdvisor:
         insights = []
         for cat, count in cat_counts.items():
             impact = count / total_neg
-            if impact > 0.1: # Threshold: >10% of complaints
+            if impact > 0.05: # Lower threshold to 5% for better visibility
                 rule = self.recommendation_rules.get(cat, {
                     'action': f'Investigar área de {cat}',
                     'detail': 'Se detectan anomalías no categorizadas.'
                 })
                 
+                # Dynamic context: Find specific themes for this cat
+                cat_neg_reviews = negative_df[negative_df['categoria_predom'] == cat]
+                cat_tokens = [t for sublist in cat_neg_reviews['tokens'] for t in sublist]
+                top_terms = pd.Series(cat_tokens).value_counts().head(3).index.tolist()
+                term_str = ", ".join(top_terms)
+                
                 insights.append({
                     "area": cat,
                     "impact": f"{impact:.1%}",
                     "action": rule['action'],
-                    "detail": rule['detail']
+                    "detail": f"{rule['detail']} (Foco en: `{term_str}`)"
                 })
                 
         return insights[:3] # Returns top 3 priority actions
+
+    def generate_comparative_advice(self, df1: pd.DataFrame, df2: pd.DataFrame) -> List[Dict]:
+        """Provides competitive benchmarking insights."""
+        if df1.empty or df2.empty: return []
+        
+        name1 = df1['domain'].iloc[0]
+        name2 = df2['domain'].iloc[0]
+        
+        score1 = df1['sentimiento_score'].mean()
+        score2 = df2['sentimiento_score'].mean()
+        
+        benchmarks = []
+        
+        # Sentiment Gap
+        if abs(score1 - score2) > 0.1:
+            leader = name1 if score1 > score2 else name2
+            laggard = name2 if score1 > score2 else name1
+            benchmarks.append({
+                "area": "Posicionamiento Global",
+                "action": f"Cierre de brecha con {leader}",
+                "detail": f"{laggard} tiene un score de {min(score1, score2):.2f} frente al {max(score1, score2):.2f} de su competencia. Se requiere acción inmediata en fidelización."
+            })
+            
+        # Category Gap
+        cat1 = df1['categoria_predom'].value_counts(normalize=True).idxmax()
+        cat2 = df2['categoria_predom'].value_counts(normalize=True).idxmax()
+        
+        if cat1 != cat2:
+            benchmarks.append({
+                "area": " Diferenciación de Mercado",
+                "action": "Explotar nicho de mercado",
+                "detail": f"Mientras {name1} se centra en {cat1}, {name2} domina en {cat2}. Oportunidad de diversificación."
+            })
+            
+        return benchmarks

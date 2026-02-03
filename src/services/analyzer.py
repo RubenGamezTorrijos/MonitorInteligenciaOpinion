@@ -7,17 +7,11 @@ import numpy as np
 from typing import Dict, List, Optional
 from src.config.constants import SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
 
-from textblob import TextBlob
-from googletrans import Translator
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional
-from src.config.constants import SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
-
-# New service imports
+from src.services.recommender import CollaborativeFilteringService
+from src.services.storage import ModelRegistry
 from src.services.ir_engine import InvertedIndex, VectorSpaceModel
 from src.services.authority import UserAuthorityService
-from src.services.recommender import CollaborativeFilteringService
+from src.services.preprocessor import SpanishTextPreprocessor
 
 class SentimentAnalyzerES:
     """Hybrid Multidimensional Sentiment Analysis System."""
@@ -38,20 +32,44 @@ class SentimentAnalyzerES:
         ]
         
         # Services
+        self.preprocessor = SpanishTextPreprocessor()
         self.authority_service = UserAuthorityService()
         self.cf_service = CollaborativeFilteringService()
         self.ir_model = None
+        self.model_registry = ModelRegistry()
 
-    def analyze_batch(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Processes reviews using the hybrid pipeline."""
+    def analyze_batch(self, df: pd.DataFrame, global_corpus: Optional[List[str]] = None) -> pd.DataFrame:
+        """Processes reviews using the hybrid pipeline with optional Global Learning."""
         if df.empty: return df
 
         # 1. Build IR Engine
         idx = InvertedIndex()
+        
+        # --- ROBUSTNESS FIX: Virtual Core ---
+        # Add seeds as virtual documents to ensure they are ALWAYS in the vocabulary.
+        # This prevents cosine similarity from collapsing to 0 if seeds aren't found in a small batch.
+        idx.add_document(-100, self.positive_seed)
+        idx.add_document(-200, self.negative_seed)
+        
+        # 1a. Global Learning Phase (Train on History)
+        if global_corpus:
+            # We use negative IDs for training docs to distinguish from active batch
+            for i, text in enumerate(global_corpus):
+                # We need consistent tokenization. 
+                # This might be slow for huge datasets, but correct for "Learning".
+                # For big data, we would load a pre-computed model.
+                res = self.preprocessor.process_pipeline(text)
+                idx.add_document(-(i+1), res['tokens'])
+        
+        # 1b. Active Batch Indexing
         for i, row in df.iterrows():
             idx.add_document(i, row['tokens'])
         
+        # 1c. Vectorize and Save Model
         self.ir_model = VectorSpaceModel(idx)
+        # Persistent Learning: Save vocabulary and IDF weights
+        self.model_registry.save_model("global_vsm", self.ir_model)
+        
         pos_query_vec = self.ir_model.vectorize(self.positive_seed)
         neg_query_vec = self.ir_model.vectorize(self.negative_seed)
 
@@ -71,7 +89,13 @@ class SentimentAnalyzerES:
         df['rating_score'] = (df['rating'] - 3) / 2
         df['temp_score'] = (df['base_score'] * 0.5) + (df['rating_score'] * 0.5)
         
+        # Load previous CF model if exists for continuous learning
+        stored_cf = self.model_registry.load_model("collaborative_filter")
+        if stored_cf:
+            self.cf_service = stored_cf
+            
         self.cf_service.fit(df.rename(columns={'temp_score': 'sentimiento_score'}))
+        self.model_registry.save_model("collaborative_filter", self.cf_service)
         
         # 5. Hybrid Calculation
         final_results = []
@@ -84,24 +108,30 @@ class SentimentAnalyzerES:
             
             # Hybrid Formula v2.1:
             # 50% normalized rating + 30% semantic text (weighted by auth) + 20% CF personalization
-            final_score = (row['rating_score'] * 0.50) + (row['base_score'] * auth_norm * 0.30) + (cf_pred * 0.20)
+            final_score = (row['rating_score'] * 0.50) + (row['base_score'] * auth_norm * 0.35) + (cf_pred * 0.15)
             
             # Constraints
             final_score = max(-1.0, min(1.0, final_score))
             
             # Adjusted Thresholds for Trustpilot ecosystem (more sensitive)
-            if final_score >= 0.05:
+            if final_score >= SENTIMENT_THRESHOLD_POSITIVE:
                 label = 'positivo'
-            elif final_score <= -0.05:
+                status = 'Excelente' if final_score > 0.4 else 'Bueno'
+            elif final_score <= SENTIMENT_THRESHOLD_NEGATIVE:
                 label = 'negativo'
+                status = 'Crítico' if final_score < -0.4 else 'Pobre'
             else:
                 label = 'neutral'
+                status = 'Neutral'
                 
             confidence = abs(final_score)
+            grado = (final_score + 1) * 50 # Map [-1, 1] to [0, 100]
             
             final_results.append({
-                'sentimiento_score': final_score,
+                'sentimiento_score': round(final_score, 4),
                 'sentimiento': label,
+                'sentimiento_status': status,
+                'grado_sentimiento': grado,
                 'confianza': confidence,
                 'authority_level': auth_norm
             })

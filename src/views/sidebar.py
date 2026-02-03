@@ -44,8 +44,31 @@ def render_sidebar():
             """
         )
         
-        # Action Button
-        analyze_clicked = st.button(ANALYZE_BUTTON, type="primary")
+        # Status detection
+        has_data = not st.session_state.df.empty if 'df' in st.session_state else False
+
+        # Action Button (Polymorphic)
+        analyze_clicked = False
+        if not has_data:
+            analyze_clicked = st.button(ANALYZE_BUTTON, type="primary", use_container_width=True)
+        else:
+            if st.button("🧹 Nuevo Análisis (Limpiar)", type="secondary", use_container_width=True):
+                # Full Reset of analytical state
+                keys_to_clear = [
+                    'data_ready', 'df', 'df_comp', 'export_data', 'export_type', 
+                    'analyzed_domain', 'compare_domain_name', 'figures',
+                    'compare_mode', 'compare_domain'
+                ]
+                for key in keys_to_clear:
+                    if key in st.session_state:
+                        # Reset to defaults where appropriate
+                        if key == 'df' or key == 'df_comp':
+                            st.session_state[key] = pd.DataFrame()
+                        elif key == 'data_ready':
+                            st.session_state[key] = False
+                        else:
+                            del st.session_state[key]
+                st.rerun()
         
         st.markdown("---")
         
@@ -65,7 +88,7 @@ def render_sidebar():
             df_comp = st.session_state.get('df_comp', pd.DataFrame())
             
             if not df_comp.empty and comp_dom:
-                analyzed_domain = f"{analyzed_domain}_vs_{comp_dom}"
+                analyzed_domain = f"{analyzed_domain} vs {comp_dom}"
                 
             exporter = ReportExporter(analyzed_domain)
             
@@ -83,7 +106,7 @@ def render_sidebar():
             if export_mode == "Dataset Excel (XLSX)":
                 if st.button("🛠️ Preparar Excel"):
                     with st.spinner("Generando archivo Excel..."):
-                        st.session_state.export_data = bytes(exporter.to_excel(df))
+                        st.session_state.export_data = bytes(exporter.to_excel(df, df_comp))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Dataset Excel (XLSX)":
                     st.download_button(
@@ -97,8 +120,7 @@ def render_sidebar():
                 if st.button("📄 Preparar Informe PDF"):
                     with st.spinner("Renderizando gráficas y generando informe..."):
                         # Identify if comparison data is available
-                        comp_data = st.session_state.get('df_comp', None)
-                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df, comp_data))
+                        st.session_state.export_data = bytes(exporter.generate_pdf_report(df, df_comp))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Informe PDF Pro":
                     st.download_button(
@@ -111,10 +133,9 @@ def render_sidebar():
             elif export_mode == "Pack Completo (ZIP)":
                 if st.button("📦 Preparar Pack ZIP"):
                     with st.spinner("Empaquetando activos analíticos..."):
-                        comp_data = st.session_state.get('df_comp', None)
-                        xlsx_data = exporter.to_excel(df)
-                        pdf_data = exporter.generate_pdf_report(df, comp_data)
-                        st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, df))
+                        xlsx_data = exporter.to_excel(df, df_comp)
+                        pdf_data = exporter.generate_pdf_report(df, df_comp)
+                        st.session_state.export_data = bytes(exporter.create_zip_bundle(analyzed_domain, xlsx_data, pdf_data, df, df_comp))
                 
                 if st.session_state.export_data and st.session_state.export_type == "Pack Completo (ZIP)":
                     st.download_button(

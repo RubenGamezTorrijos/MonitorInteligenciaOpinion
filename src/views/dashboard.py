@@ -10,7 +10,7 @@ from wordcloud import WordCloud
 import seaborn as sns
 import io
 from src.config.constants import TABS, SENTIMENT_THRESHOLD_POSITIVE, SENTIMENT_THRESHOLD_NEGATIVE
-from src.services.viz_engine import generate_authority_scatter, generate_refinement_comparison, generate_time_series_comparison
+from src.services.viz_engine import generate_authority_scatter, generate_refinement_comparison, generate_time_series_comparison, generate_wordcloud_static
 
 def render_dashboard(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     """Orchestrates the rendering of horizontal tabs and their content."""
@@ -74,10 +74,31 @@ def _render_overview_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame(
             st.markdown(f"### 🏷️ {label}")
             st.caption("Dominio Analizado")
             
-        c1.metric("Sentimiento", f"{avg_score:.2f}")
-        c2.metric("Total Reseñas", total_reviews)
-        c3.metric("% Positivo", f"{pos_perc:.1f}%")
-        c4.metric("Confianza", f"{d['confianza'].mean():.1%}")
+        c1.metric("Total Reseñas", total_reviews)
+        c2.metric("% Positivo", f"{pos_perc:.1f}%")
+        
+        # Enhanced Sentiment Metric with Status Icon
+        status = "Neutral"
+        icon = "😐"
+        color = "normal"
+        if avg_score > 0.4:
+            status = "Excelente"
+            icon = "✅"
+        elif avg_score > 0.1:
+            status = "Bueno"
+            icon = "👍"
+        elif avg_score < -0.4:
+            status = "Crítico"
+            icon = "🚨"
+            color = "inverse"
+        elif avg_score < -0.1:
+            status = "Pobre"
+            icon = "⚠️"
+            
+        c3.metric("IQ de Sentimiento", f"{avg_score:.2f} {icon}", help=f"Estado Global: {status}")
+        
+        avg_grado = d['grado_sentimiento'].mean() if 'grado_sentimiento' in d.columns else (avg_score + 1) * 50
+        c4.metric("Grado / Salud", f"{avg_grado:.1f}%", help="0% Salud Crítica | 100% Salud Excelente")
 
     if not df_comp.empty:
         nom1 = df['domain'].iloc[0]
@@ -181,15 +202,8 @@ def _render_intel_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     
     # Helper for WordCloud
     def render_cloud(d, title):
-        all_tokens = [t for sublist in d['tokens'] for t in sublist]
-        if all_tokens:
-            text_for_cloud = " ".join(all_tokens)
-            wc = WordCloud(width=800, height=400, background_color='white', 
-                          colormap='Greens', max_words=100).generate(text_for_cloud)
-            fig_wc, ax = plt.subplots(figsize=(10, 5))
-            ax.imshow(wc, interpolation='bilinear')
-            ax.axis('off')
-            ax.set_title(title)
+        fig_wc = generate_wordcloud_static(d)
+        if fig_wc:
             st.pyplot(fig_wc)
         else:
             st.info(f"Sin datos para {title}")
@@ -209,17 +223,10 @@ def _render_intel_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
             word_freq = pd.Series(all_tokens).value_counts().head(20).reset_index()
             word_freq.columns = ['Palabra', 'Frecuencia']
             
-            st.write("### ☁️ Nube de Palabras (WordCloud)")
-            text_for_cloud = " ".join(all_tokens)
-            if text_for_cloud:
-                wc = WordCloud(width=1200, height=500, background_color='white', 
-                              colormap='Greens', max_words=100).generate(text_for_cloud)
-                
-                fig_wc, ax = plt.subplots(figsize=(15, 6))
-                ax.imshow(wc, interpolation='bilinear')
-                ax.axis('off')
+            st.write("### ☁️ Nube de Inteligencia Semántica")
+            fig_wc = generate_wordcloud_static(df)
+            if fig_wc:
                 st.pyplot(fig_wc)
-                text_for_cloud = " ".join(all_tokens)
             
             st.divider()
     
@@ -354,6 +361,13 @@ def _render_advanced_insights_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.D
                 for insight in insights_comp:
                     st.warning(f"**{insight['area']}**: {insight['action']}")
                     st.caption(insight['detail'])
+                    
+                st.divider()
+                st.markdown("#### ⚔️ Benchmarking Competitivo")
+                comp_insights = advisor.generate_comparative_advice(df, df_comp)
+                for ci in comp_insights:
+                    st.info(f"**{ci['area']}**: {ci['action']}")
+                    st.caption(ci['detail'])
             else:
                 st.info("Añade un competidor para ver recomendaciones comparadas.")
 
@@ -415,7 +429,11 @@ def _plot_correlation(df_in: pd.DataFrame):
     relevant_cols = [c for c in numeric_cols if c in ['sentimiento_score', 'confianza', 'palabras_original', 'palabras_limpias', 'rating_score', 'user_authority']]
     
     if len(relevant_cols) > 1:
-        corr_matrix = df_in[relevant_cols].corr()
+        # Filter out columns with zero variance to avoid NaNs in correlation
+        final_cols = [c for c in relevant_cols if df_in[c].std() > 0]
+        
+        if len(final_cols) > 1:
+            corr_matrix = df_in[final_cols].corr()
         
         fig_corr = go.Figure(data=go.Heatmap(
             z=corr_matrix.values,
@@ -440,19 +458,29 @@ def _render_comparison_tab(df1: pd.DataFrame, df2: pd.DataFrame):
     
     # 1. Comparative Metrics
     col1, col2 = st.columns(2)
+    
+    def render_kpis(df, label):
+        avg_score = df['sentimiento_score'].mean()
+        icon = "😐"
+        if avg_score > 0.4: icon = "✅"
+        elif avg_score > 0.1: icon = "👍"
+        elif avg_score < -0.4: icon = "🚨"
+        elif avg_score < -0.1: icon = "⚠️"
+        
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Rating Medio", f"{df['rating'].mean():.2f}")
+        m2.metric("IQ Sentimiento", f"{avg_score:.2f} {icon}")
+        
+        avg_grado = df['grado_sentimiento'].mean() if 'grado_sentimiento' in df.columns else (avg_score + 1) * 50
+        m3.metric("Salud Marca", f"{avg_grado:.1f}%")
+
     with col1:
         st.write(f"### 🚩 KPI: {dom1}")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Rating Medio", f"{df1['rating'].mean():.2f}")
-        m2.metric("Sentimiento", f"{df1['sentimiento_score'].mean():.2f}")
-        m3.metric("% Positivo", f"{(len(df1[df1['sentimiento']=='positivo'])/len(df1)):.1%}")
+        render_kpis(df1, dom1)
 
     with col2:
         st.write(f"### 🏁 KPI: {dom2}")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Rating Medio", f"{df2['rating'].mean():.2f}")
-        m2.metric("Sentimiento", f"{df2['sentimiento_score'].mean():.2f}")
-        m3.metric("% Positivo", f"{(len(df2[df2['sentimiento']=='positivo'])/len(df2)):.1%}")
+        render_kpis(df2, dom2)
 
     st.divider()
 

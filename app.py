@@ -12,29 +12,69 @@ from src.views.dashboard import render_dashboard
 from src.services.scraper import TrustpilotScraper
 from src.services.preprocessor import SpanishTextPreprocessor
 from src.services.analyzer import SentimentAnalyzerES
+from src.services.storage import ReviewRepository
 
 # --- Optimized Service Helpers with Caching ---
-@st.cache_data(show_spinner=False)
+# Removing cache for pipeline to ensure latest data is saved/loaded
+# caching should happen at the data loading level if needed, but for now we want fresh save
 def run_analysis_pipeline(domain: str, max_rev: int):
-    """Cached pipeline with dynamic brand noise filtering."""
-    # 1. Scraping
-    scraper = TrustpilotScraper(domain)
-    df_raw = scraper.scrape_reviews(max_reviews=max_rev)
+    """Pipeline with Persistence: Scrape -> Save -> Load History -> Analyze."""
+    repo = ReviewRepository()
     
-    if df_raw.empty:
+    # 1. Scraping (Try to get new data)
+    scraper = TrustpilotScraper(domain)
+    df_new = scraper.scrape_reviews(max_reviews=max_rev)
+    
+    # 2. Persistence (Save new data)
+    new_count = 0
+    if not df_new.empty:
+        new_count = repo.save_reviews(domain, df_new)
+        
+    # 3. Load Cumulative History (The "Learning" Step)
+    # We analyze the full history, not just the new batch
+    df_history = repo.load_history(domain)
+    
+    if df_history.empty:
         return None
         
-    # 2. Preprocessing (Dynamic Noise Filtering)
+    # 4. Preprocessing (Dynamic Noise Filtering)
+    # Apply to full history
     preprocessor = SpanishTextPreprocessor()
-    processed_results = [preprocessor.process_pipeline(text, domain=domain) for text in df_raw['text']]
+    # We re-process everything to ensure consistency (or we could store processed)
+    # For now, re-processing ensures latest stopwords/logic are applied
+    processed_results = [preprocessor.process_pipeline(text, domain=domain) for text in df_history['text']]
     df_proc = pd.DataFrame(processed_results)
     
     # Merge results
-    df_merged = pd.concat([df_raw, df_proc.drop(columns=['original'])], axis=1)
+    df_merged = pd.concat([df_history.reset_index(drop=True), df_proc.drop(columns=['original'])], axis=1)
     
-    # 3. Sentiment & Categorization Analysis
+    # 5. Global Learning / Sentiment Analysis
+    # In a full ML system, we would load a global model here. 
+    # For now, TF-IDF fits on the specific domain history, which is "cumulative learning" for that domain.
     analyzer = SentimentAnalyzerES()
-    df_final = analyzer.analyze_batch(df_merged)
+    
+    # Optional: Load Global Corpus for better IDF (if performance allows)
+    # global_corpus = repo.get_global_corpus() 
+    # For now, we use the domain history as the "learning base" which is safer for performance
+    # But to answer the user's request for "Global Learning", we can enable it:
+    
+    global_corpus = []
+    # Only load global if we have enough data to make it worth it, or if user requested deep learning
+    # For this implementation, we use the domain history + potential other domains
+    # To be safe and fast, let's just use the df_merged text as the training set, 
+    # but IF we want "Global", we would uncomment:
+    # global_corpus = repo.get_global_corpus()
+    
+    # We pass the full history as the "corpus" to train on. 
+    # The analyzer will use this to build the vocabulary and IDF.
+    # Note: analyze_batch already uses the input df to build the index.
+    # If we want to add *extra* context from other domains, we pass it as 'global_corpus'.
+    # Let's try to get a broader context if available.
+    extra_context = repo.get_global_corpus()
+    # Filter out texts already in df_merged to avoid double counting if we were strict, 
+    # but InvertedIndex with negative IDs handles separation.
+    
+    df_final = analyzer.analyze_batch(df_merged, global_corpus=extra_context)
     
     return df_final
 

@@ -22,11 +22,11 @@ class SpanishTextPreprocessor:
         # Add comprehensive industries/domain specific Stopwords from notebook
         extra_stopwords = {
             'amazon', 'amazones', 'temu', 'elcorteingles', 'pccomponentes',
-            'producto', 'productos', 'servicio', 'servicios', 'envío', 'envios',
-            'pedido', 'pedidos', 'cliente', 'clientes', 'comprar', 'compra',
-            'calidad', 'precio', 'tiempo', 'entrega', 'entregas', 'empresa',
-            'atención', 'recomiendo', 'recomendación', 'recomendaciones',
-            'problema', 'problemas', 'cosa', 'cosas', 'vez', 'veces', 'año',
+            'productos', 'servicios', 'envios',
+            'pedidos', 'clientes', 'comprar', 'compra',
+            'tiempo', 'entregas', 'empresa',
+            'recomendación', 'recomendaciones',
+            'problemas', 'cosa', 'cosas', 'vez', 'veces', 'año',
             'años', 'día', 'días', 'semana', 'semanas', 'mes', 'meses',
             'hora', 'horas', 'minuto', 'minutos', 'momento',
             'también', 'además', 'incluso', 'aunque', 'porque', 'pues',

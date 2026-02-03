@@ -17,60 +17,84 @@ class ReportExporter:
         self.domain = domain
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         
-    def to_excel(self, df: pd.DataFrame) -> bytes:
-        """Generates an Excel (XLSX) buffer with styles and professional formatting."""
-        # Solución de compatibilidad: Excel no soporta zonas horarias (Timezones)
-        df_export = df.copy()
-        
-        # Convertir columnas datetime con zona horaria a 'naive' (sin zona horaria)
-        # Esto soluciona el ValueError: Excel does not support datetimes with timezones
-        for col in df_export.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
-            df_export[col] = df_export[col].dt.tz_localize(None)
+    def to_excel(self, df: pd.DataFrame, df_comp: pd.DataFrame = None) -> bytes:
+        """Generates an Excel (XLSX) buffer. In comparison mode, combines both brands."""
+        def _prepare_df(d):
+            d_export = d.copy()
+            for col in d_export.select_dtypes(include=['datetimetz', 'datetime64[ns, UTC]']).columns:
+                d_export[col] = d_export[col].dt.tz_localize(None)
+            return d_export
 
+        df_main = _prepare_df(df)
+        
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df_export.to_excel(writer, sheet_name='Opiniones Analizadas', index=False)
-            workbook = writer.book
-            worksheet = writer.sheets['Opiniones Analizadas']
+            # Sheet 1: Main Domain
+            sheet_name = df_main['domain'].iloc[0][:30] if not df_main.empty else "Principal"
+            df_main.to_excel(writer, sheet_name=sheet_name, index=False)
             
-            # Formatos
+            # Sheet 2: Comparison (if exists)
+            if df_comp is not None and not df_comp.empty:
+                df_c = _prepare_df(df_comp)
+                comp_sheet = df_c['domain'].iloc[0][:30]
+                df_c.to_excel(writer, sheet_name=comp_sheet, index=False)
+                
+                # Sheet 3: Unified Comparison View
+                combined = pd.concat([df_main, df_c], ignore_index=True)
+                combined.to_excel(writer, sheet_name='Benchmark Comparativo', index=False)
+
+            workbook = writer.book
             header_format = workbook.add_format({
-                'bold': True,
-                'text_wrap': True,
-                'valign': 'top',
-                'fg_color': '#D7E4BC',
-                'border': 1
+                'bold': True, 'text_wrap': True, 'valign': 'top',
+                'fg_color': '#D7E4BC', 'border': 1
             })
             
-            # Aplicar formato a cabeceras
-            for col_num, value in enumerate(df_export.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-            
-            # Ajuste de columnas
-            for i, col in enumerate(df_export.columns):
-                # Calcular el ancho máximo basado en el contenido
-                max_val = df_export[col].astype(str).map(len).max()
-                column_len = max(max_val, len(col)) + 2
-                worksheet.set_column(i, i, min(column_len, 60))
-        
-        # Capturar el contenido del buffer y cerrarlo
+            # Apply format to all sheets
+            for sheet in writer.sheets.values():
+                for col_num, value in enumerate(df_main.columns.values):
+                    sheet.write(0, col_num, value, header_format)
+                sheet.set_column(0, len(df_main.columns), 20)
+
         excel_data = output.getvalue()
         output.close()
         return excel_data
 
-    def _generate_report_charts(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """Internal helper to centralize chart generation logic."""
-        return {
-            "Distribución por Categorías": viz_engine.generate_category_chart(df),
-            "Distribución de Sentimiento": viz_engine.generate_sentiment_pie(df),
-            "Histograma de Intensidad": viz_engine.generate_sentiment_hist(df),
-            "Evolución Temporal": viz_engine.generate_evolution_chart(df),
-            "Top 20 Palabras Clave": viz_engine.generate_word_freq_chart(df),
-            "Nube de Palabras": viz_engine.generate_wordcloud_static(df),
-            "Métricas por Sentimiento": viz_engine.generate_boxplot_insight(df),
-            "Drivers de Opinión": viz_engine.generate_drivers_chart(df),
-            "Matriz de Correlación": viz_engine.generate_correlation_heatmap(df)
-        }
+    def _generate_report_charts(self, df: pd.DataFrame, df_comp: pd.DataFrame = None) -> Dict[str, Any]:
+        """Internal helper to centralize chart generation logic, including comparative ones."""
+        charts = {}
+        nom1 = df['domain'].iloc[0] if not df.empty else "Principal"
+        
+        # --- PHASE 1: Main Brand Analysis ---
+        charts[f"[{nom1}] - Distribución por Categorías"] = viz_engine.generate_category_chart(df)
+        charts[f"[{nom1}] - Distribución de Sentimiento"] = viz_engine.generate_sentiment_pie(df)
+        charts[f"[{nom1}] - Nube de Inteligencia Semántica"] = viz_engine.generate_wordcloud_static(df)
+        charts[f"[{nom1}] - Drivers de Opinión"] = viz_engine.generate_drivers_chart(df)
+        
+        # --- PHASE 2: Competitive Insight & Individual Competitor ---
+        if df_comp is not None and not df_comp.empty:
+            nom2 = df_comp['domain'].iloc[0]
+            
+            # Comparative Asset (Top Priority)
+            charts[f"BENCHMARK - Evolución Temporal"] = viz_engine.generate_time_series_comparison(df, df_comp, nom1, nom2)
+            charts["BENCHMARK - Distribución de Sentimiento"] = viz_engine.generate_sentiment_comparison_bar(df, df_comp, nom1, nom2)
+            charts["BENCHMARK - Distribución por Temas"] = viz_engine.generate_category_comparison_bar(df, df_comp, nom1, nom2)
+            
+            # Competitor Details
+            charts[f"[{nom2}] - Distribución por Categorías"] = viz_engine.generate_category_chart(df_comp)
+            charts[f"[{nom2}] - Distribución de Sentimiento"] = viz_engine.generate_sentiment_pie(df_comp)
+            charts[f"[{nom2}] - Nube de Inteligencia Semántica"] = viz_engine.generate_wordcloud_static(df_comp)
+            
+            # Technical Insight
+            charts["BENCHMARK - Matriz de Correlación Unificada"] = viz_engine.generate_correlation_heatmap(pd.concat([df, df_comp]))
+            
+        else:
+            # Single Mode extra charts
+            charts["Evolución Temporal"] = viz_engine.generate_evolution_chart(df)
+            charts["Top 20 Palabras Clave"] = viz_engine.generate_word_freq_chart(df)
+            charts["Matriz de Correlación"] = viz_engine.generate_correlation_heatmap(df)
+            charts["Métricas por Sentimiento"] = viz_engine.generate_boxplot_insight(df)
+            
+        return charts
 
     def generate_pdf_report(self, df: pd.DataFrame, df_comp: pd.DataFrame = None) -> bytes:
         """Creates a professional PDF report with executive KPIs and dashboard charts."""
@@ -131,20 +155,8 @@ class ReportExporter:
         pdf.cell(0, 10, "Análisis Visual de Reputación", ln=True)
         pdf.ln(5)
         
-        # Generate standard charts (for primary domain)
-        report_charts = self._generate_report_charts(df)
-        
-        # If comparison, render comparison charts that are compatible with static export
-        if df_comp is not None and not df_comp.empty:
-            try:
-                # Add comparison time series if available
-                nom1 = df['domain'].iloc[0]
-                nom2 = df_comp['domain'].iloc[0]
-                fig_comp = viz_engine.generate_time_series_comparison(df, df_comp, nom1, nom2)
-                if fig_comp:
-                    report_charts["Evolución Comparativa"] = fig_comp
-            except:
-                pass
+        # Generate complete set of charts (Logic is now inside _generate_report_charts)
+        report_charts = self._generate_report_charts(df, df_comp)
 
         for name, fig in report_charts.items():
             if fig is None: continue
@@ -172,18 +184,17 @@ class ReportExporter:
 
         return bytes(pdf.output())
 
-        return bytes(pdf.output())
-
-    def create_zip_bundle(self, domain: str, excel_bytes: bytes, pdf_bytes: bytes, df: pd.DataFrame) -> bytes:
+    def create_zip_bundle(self, domain: str, excel_bytes: bytes, pdf_bytes: bytes, df: pd.DataFrame, df_comp: pd.DataFrame = None) -> bytes:
         """Packages all analytical assets into a professional ZIP bundle."""
         zip_buffer = io.BytesIO()
+        safe_name = domain.replace(" ", "_").lower()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            # Añadir archivos principales
-            zf.writestr(f"{domain}_data_analisis.xlsx", excel_bytes)
-            zf.writestr(f"{domain}_informe_profesional.pdf", pdf_bytes)
+            # Main files
+            zf.writestr(f"{safe_name}_data_analisis.xlsx", excel_bytes)
+            zf.writestr(f"{safe_name}_informe_profesional.pdf", pdf_bytes)
             
-            # Añadir imágenes de gráficas individuales (Matplotlib para estabilidad en nube)
-            report_charts = self._generate_report_charts(df)
+            # Individual and comparative charts
+            report_charts = self._generate_report_charts(df, df_comp)
             for name, fig in report_charts.items():
                 if fig is None: continue
                 try:

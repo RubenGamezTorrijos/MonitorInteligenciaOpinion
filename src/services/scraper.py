@@ -7,7 +7,7 @@ import time
 import re
 from typing import List, Dict, Optional
 from datetime import datetime
-from src.config.constants import TRUSTPILOT_BASE_URL, SCRAPE_REVIEWS_PER_PAGE
+from src.config.constants import TRUSTPILOT_BASE_URL, SCRAPE_REVIEWS_PER_PAGE, TRUSTPILOT_SELECTORS
 
 class TrustpilotScraper:
     """Service specialized for Trustpilot.com (Dynamic Analysis) as implemented in Laboratory Mode."""
@@ -65,12 +65,8 @@ class TrustpilotScraper:
                     
                 soup = BeautifulSoup(response.content, 'html.parser')
                 
-                # Multiple selector logic from notebook
-                review_selectors = [
-                    'article[data-service-review-card-paper="true"]',
-                    'article[data-service-review]',
-                    'div.review-card'
-                ]
+                # Use constants
+                review_selectors = TRUSTPILOT_SELECTORS['review_card']
                 
                 page_reviews_elements = []
                 for selector in review_selectors:
@@ -103,15 +99,9 @@ class TrustpilotScraper:
     def _extract_review_details(self, element) -> Optional[Dict]:
         """Extracts structured data from a single review element."""
         try:
-            # Text selectors from notebook
-            text_selectors = [
-                'p[data-service-review-text-typography="true"]',
-                'p[data-relevant-review-text-typography="true"]',
-                'p[data-review-content-typography="true"]'
-            ]
-            
+            # Text selectors from constants
             text = ""
-            for selector in text_selectors:
+            for selector in TRUSTPILOT_SELECTORS['text']:
                 text = self.safe_extract(element, selector)
                 if text and len(text) > 10:
                     break
@@ -119,36 +109,43 @@ class TrustpilotScraper:
             if not text: return None
 
             # User selectors
-            user_selectors = [
-                'span[data-consumer-name-typography="true"]',
-                'div[data-consumer-name-typography="true"]',
-                'span.typography_appearance-default__D9m_F.typography_color-inherit__D_i_t'
-            ]
             user_name = "Anónimo"
-            for selector in user_selectors:
+            for selector in TRUSTPILOT_SELECTORS['user']:
                 user_name = self.safe_extract(element, selector)
                 if user_name: break
 
-            # Rating selectors
-            rating = 3 # Default
+            # Rating logic (Robust Multi-language)
+            rating = 3 
             try:
-                rating_img = element.select_one('img[alt^="Rated"]')
+                # 1. Check for 'alt' attribute in img (Standard)
+                rating_img = element.select_one('img[alt*="estrellas"], img[alt*="stars"]')
                 if rating_img:
-                    rating_match = re.search(r'Rated (\d)', rating_img['alt'])
+                    alt_text = rating_img.get('alt', '')
+                    # Matches "5 de 5", "5 estrellas", "Rated 5", "Valorado con 5"
+                    rating_match = re.search(r'(\d)', alt_text)
                     if rating_match:
                         rating = int(rating_match.group(1))
                 else:
-                    # Fallback for different Trustpilot versions
+                    # 2. Check for data-rating attribute
                     rating_div = element.select_one('div[data-rating]')
                     if rating_div:
                         rating = int(rating_div.get('data-rating', 3))
+                    else:
+                        # 3. Check for specific class names containing the number
+                        star_div = element.select_one('div[class*="star-rating"]')
+                        if star_div:
+                            # Class might be like "star-rating_starRating__9_fBy"
+                            # Attempt to find common numeric patterns in siblings/children
+                            text_ref = star_div.get_text()
+                            num_match = re.search(r'(\d)', text_ref)
+                            if num_match:
+                                rating = int(num_match.group(1))
             except Exception:
                 pass
 
             # Date selectors
-            date_selectors = ['time', 'span[data-service-review-date-time-ago]', 'div.review-date']
             date_str = ""
-            for selector in date_selectors:
+            for selector in TRUSTPILOT_SELECTORS['date']:
                 date_str = self.safe_extract(element, selector, 'datetime')
                 if date_str: break
             
