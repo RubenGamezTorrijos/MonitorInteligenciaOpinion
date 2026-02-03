@@ -333,36 +333,89 @@ def _render_advanced_insights_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.D
             st.session_state.figures['opinion_drivers'] = fig_drivers
     
         st.divider()
-        st.write("### 🏗️ Arquitectura Híbrida y Veracidad del Modelo")
+        st.write("### 🤖 Asesor Estratégico (AI-Driven)")
         
-        col3, col4 = st.columns(2)
-        with col3:
-            st.info("📊 **Autoridad del Revisor (PageRank):** Muestra cómo el sistema pondera las reseñas basándose en la importancia de cada usuario en la red.")
-            fig_auth = generate_authority_scatter(df)
-            if fig_auth:
-                st.pyplot(fig_auth)
-                st.session_state.figures['authority_scatter'] = fig_auth
+        from src.services.advisor import StrategicAdvisor
+        advisor = StrategicAdvisor()
+        
+        col_adv1, col_adv2 = st.columns(2)
+        
+        with col_adv1:
+            st.markdown(f"#### 💡 Recomendaciones para {df['domain'].iloc[0]}")
+            insights = advisor.generate_strategic_report(df)
+            for insight in insights:
+                st.warning(f"**{insight['area']}**: {insight['action']}")
+                st.caption(insight['detail'])
                 
-        with col4:
-            st.info("🧪 **Refinamiento de Sentimiento:** Comparación entre el score base (TF-IDF) y el ajustado por Filtrado Colaborativo y Autoridad.")
-            fig_refine = generate_refinement_comparison(df)
-            if fig_refine:
-                st.pyplot(fig_refine)
-                st.session_state.figures['refinement_comparison'] = fig_refine
+        with col_adv2:
+            if not df_comp.empty:
+                st.markdown(f"#### 💡 Recomendaciones para {df_comp['domain'].iloc[0]}")
+                insights_comp = advisor.generate_strategic_report(df_comp)
+                for insight in insights_comp:
+                    st.warning(f"**{insight['area']}**: {insight['action']}")
+                    st.caption(insight['detail'])
+            else:
+                st.info("Añade un competidor para ver recomendaciones comparadas.")
+
+        st.divider()
+        st.write("### 🗣️ Consenso de Opinión (Frases Recurrentes)")
+        st.caption("Patrones verbales de 3 palabras más repetidos (Trigramas)")
+        
+        from src.services.preprocessor import SpanishTextPreprocessor
+        pre = SpanishTextPreprocessor()
+        
+        c_p1, c_p2 = st.columns(2)
+        with c_p1:
+            st.markdown(f"**{df['domain'].iloc[0]}** - Patrones")
+            phrases = pre.extract_common_phrases(df['text'], n=3, top_k=5)
+            for p, count in phrases:
+                st.write(f"- *'{p}'* ({count} veces)")
+                
+        with c_p2:
+            if not df_comp.empty:
+                st.markdown(f"**{df_comp['domain'].iloc[0]}** - Patrones")
+                phrases_comp = pre.extract_common_phrases(df_comp['text'], n=3, top_k=5)
+                for p, count in phrases_comp:
+                    st.write(f"- *'{p}'* ({count} veces)")
+                    
+        st.divider()
+        st.write("### 🛡️ Veracidad de la Información (User Authority)")
+        st.info("Métrica basada en PageRank: Evalúa la credibilidad de los autores basada en su historial e impacto.")
+        
+        av1 = df['authority_level'].mean()
+        delta_val = None
+        if not df_comp.empty:
+            av2 = df_comp['authority_level'].mean()
+            delta_val = av1 - av2
+            
+        st.metric(label=f"Índice de Veracidad Promedio ({df['domain'].iloc[0]})", value=f"{av1:.2f}", delta=f"{delta_val:.2f}" if delta_val else None)
+        
+        fig_auth = generate_authority_scatter(df)
+        if fig_auth: st.pyplot(fig_auth)
 
 def _render_corr_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
     st.subheader("📉 Matriz de Correlación")
     
     if not df_comp.empty:
-        st.warning("La matriz de correlación solo está disponible para el dominio principal en esta versión.")
-    
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"#### 🟦 {df['domain'].iloc[0]}")
+            _plot_correlation(df)
+        with col2:
+            st.markdown(f"#### 🟧 {df_comp['domain'].iloc[0]}")
+            _plot_correlation(df_comp)
+    else:
+        _plot_correlation(df)
+
+def _plot_correlation(df_in: pd.DataFrame):
+    """Helper to plot correlation matrix for a given dataframe."""
     # Select numeric columns for correlation
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_cols = df_in.select_dtypes(include=[np.number]).columns.tolist()
     # Filter columns that are relevant
-    relevant_cols = [c for c in numeric_cols if c in ['sentimiento_score', 'confianza', 'palabras_original', 'palabras_limpias']]
+    relevant_cols = [c for c in numeric_cols if c in ['sentimiento_score', 'confianza', 'palabras_original', 'palabras_limpias', 'rating_score', 'user_authority']]
     
     if len(relevant_cols) > 1:
-        corr_matrix = df[relevant_cols].corr()
+        corr_matrix = df_in[relevant_cols].corr()
         
         fig_corr = go.Figure(data=go.Heatmap(
             z=corr_matrix.values,
@@ -374,18 +427,10 @@ def _render_corr_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame()):
             texttemplate="%{text}",
             hoverongaps = False))
         
-        fig_corr.update_layout(title=f"Matriz de Correlación: {df['domain'].iloc[0]}")
+        fig_corr.update_layout(title=f"Matriz de Correlación: {df_in['domain'].iloc[0] if not df_in.empty else ''}")
         st.plotly_chart(fig_corr, use_container_width=True)
-        st.session_state.figures['correlation_matrix'] = fig_corr
-
-        st.markdown("""
-        **Guía de Interpretación:**
-        - **1.0**: Correlación positiva perfecta.
-        - **-1.0**: Correlación negativa perfecta.
-        - **0.0**: Ausencia de correlación lineal.
-        """)
     else:
-        st.warning("No hay suficientes variables numéricas para realizar la matriz de correlación.")
+        st.warning(f"No hay suficientes variables numéricas para realizar la matriz en {df_in['domain'].iloc[0] if not df_in.empty else 'dominio'}.")
 
 def _render_comparison_tab(df1: pd.DataFrame, df2: pd.DataFrame):
     dom1 = df1['domain'].iloc[0] if not df1.empty else "Marca 1"

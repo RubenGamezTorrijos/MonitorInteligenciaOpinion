@@ -80,7 +80,14 @@ def main():
     # Main Content Area
     st.title(f"{APP_ICON} {APP_TITLE}")
     active_dom = st.session_state.get('analyzed_domain', 'Ninguno')
-    st.markdown(f"**Analítica Profesional de Reputación Online** | Dominio analizado: `{active_dom}`")
+    comp_dom = st.session_state.get('compare_domain_name', None)
+    df_comp = st.session_state.get('df_comp', pd.DataFrame())
+    
+    display_text = active_dom
+    if not df_comp.empty and comp_dom:
+        display_text = f"{active_dom} ⚔️ {comp_dom}"
+        
+    st.markdown(APP_SUBTITLE_TEMPLATE.format(domains=f"`{display_text}`"))
     
     if st.session_state.data_ready:
         render_dashboard(st.session_state.df, st.session_state.df_comp)

@@ -11,7 +11,8 @@ APP_SUBTITLE_TEMPLATE = "Analítica Profesional de Reputación Online | Dominio 
 
 # Scraper Configuration
 TRUSTPILOT_BASE_URL = "https://es.trustpilot.com/review/"
-DEFAULT_DOMAIN = "amazon.es"
+DEFAULT_DOMAIN = "dominio.com"
+DEFAULT_COMPARE_DOMAIN = "competencia.com"
 SCRAPE_MAX_REVIEWS = 50  # Increased for laboratory depth
 SCRAPE_REVIEWS_PER_PAGE = 20
 

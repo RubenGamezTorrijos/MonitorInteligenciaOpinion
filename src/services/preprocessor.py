@@ -96,3 +96,22 @@ class SpanishTextPreprocessor:
             'palabras_original': len(str(text).split()),
             'palabras_limpias': len(tokens)
         }
+
+    def extract_common_phrases(self, texts: List[str], n: int = 2, top_k: int = 10) -> List[tuple]:
+        """Extracts most common n-grams (phrases) from a list of texts."""
+        from collections import Counter
+        
+        all_phrases = []
+        for text in texts:
+            # Simple tokenization for phrases (keeping stopwords can sometimes be useful for context, 
+            # but usually for 'topics' we want content words. Let's use cleaned text)
+            # We reuse clean_text logic but maybe keep it simple here
+            words = self.remove_stopwords(self.clean_text(text)).split()
+            if len(words) < n: continue
+            
+            # Sliding window for n-grams
+            phrases = [' '.join(words[i:i+n]) for i in range(len(words)-n+1)]
+            all_phrases.extend(phrases)
+            
+        counter = Counter(all_phrases)
+        return counter.most_common(top_k)

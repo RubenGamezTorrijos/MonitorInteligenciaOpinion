@@ -100,7 +100,7 @@ class ReportExporter:
             
             # Domain 1
             pdf.set_text_color(0, 100, 200) # Blue-ish
-            pdf.cell(0, 8, f"🟦 {dom1}:", ln=True)
+            pdf.cell(0, 8, f"[PRINCIPAL] {dom1}:", ln=True)
             pdf.set_text_color(0)
             avg1 = df['sentimiento_score'].mean()
             pdf.cell(0, 8, f"   - Sentimiento Promedio: {avg1:.2f}", ln=True)
@@ -110,7 +110,7 @@ class ReportExporter:
             
             # Domain 2
             pdf.set_text_color(200, 100, 0) # Orange-ish
-            pdf.cell(0, 8, f"🟧 {dom2}:", ln=True)
+            pdf.cell(0, 8, f"[COMPARATIVA] {dom2}:", ln=True)
             pdf.set_text_color(0)
             avg2 = df_comp['sentimiento_score'].mean()
             pdf.cell(0, 8, f"   - Sentimiento Promedio: {avg2:.2f}", ln=True)

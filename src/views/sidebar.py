@@ -1,6 +1,7 @@
 import streamlit as st
 import io
-from src.config.constants import SIDEBAR_HEADER, ANALYZE_BUTTON, DEFAULT_DOMAIN, SCRAPE_MAX_REVIEWS
+import pandas as pd
+from src.config.constants import SIDEBAR_HEADER, ANALYZE_BUTTON, DEFAULT_DOMAIN, DEFAULT_COMPARE_DOMAIN, SCRAPE_MAX_REVIEWS
 from src.services.exporter import ReportExporter
 
 def render_sidebar():
@@ -14,7 +15,7 @@ def render_sidebar():
         st.subheader("🌐 Configuración de Marca")
         domain_input = st.text_input(
             "Dominio Principal",
-            placeholder="ej: amazon.es",
+            placeholder=f"ej: {DEFAULT_DOMAIN}",
             value=DEFAULT_DOMAIN,
             help="Introduce el nombre tal como aparece en Trustpilot."
         )
@@ -23,7 +24,7 @@ def render_sidebar():
             compare_mode = st.checkbox("Activar comparación", value=st.session_state.get('compare_mode', False))
             compare_domain = st.text_input(
                 "Segundo Dominio",
-                placeholder="ej: pccomponentes.com",
+                placeholder=f"ej: {DEFAULT_COMPARE_DOMAIN}",
                 value=st.session_state.get('compare_domain', ""),
                 disabled=not compare_mode
             )
