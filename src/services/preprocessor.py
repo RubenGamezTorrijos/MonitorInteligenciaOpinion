@@ -20,14 +20,17 @@ class SpanishTextPreprocessor:
             nltk.download('stopwords')
             self.stop_words = set(stopwords.words('spanish'))
             
-        # spaCy Model Failsafe
+        # spaCy Model Loading
         try:
             self.nlp = spacy.load("es_core_news_sm")
         except OSError:
-            # If model is not found, attempt to download it (useful for first-run on Cloud)
-            print("spaCy model 'es_core_news_sm' not found. Downloading...")
-            spacy.cli.download("es_core_news_sm")
-            self.nlp = spacy.load("es_core_news_sm")
+            # Model should be in requirements.txt for Streamlit Cloud
+            print("ERROR: spaCy model 'es_core_news_sm' not found.")
+            print("Ensure 'es_core_news_sm @ https://github.com/..."
+                  "is in requirements.txt")
+            # Fallback to a very basic tokenizer or raising error
+            raise ImportError("Critical NLP model 'es_core_news_sm' missing. "
+                              "Check requirements.txt")
             
         # Add comprehensive industries/domain specific Stopwords from notebook
         extra_stopwords = {
