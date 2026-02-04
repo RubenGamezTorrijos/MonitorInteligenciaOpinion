@@ -3,15 +3,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import sys
-
-# Fix Python path for Streamlit Cloud
-if os.path.exists('/mount/src'):
-    # Running on Streamlit Cloud
-    sys.path.insert(0, os.path.abspath('.'))
-else:
-    # Running locally
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Internal Imports
 from src.config.constants import APP_TITLE, APP_ICON, DATA_DIR, APP_SUBTITLE_TEMPLATE

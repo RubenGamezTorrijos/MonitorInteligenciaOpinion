@@ -1,6 +1,7 @@
 # Professional Streamlit Opinion Intelligence Monitor - Preprocessor Service
 
 import spacy
+import spacy.cli
 import nltk
 from nltk.corpus import stopwords
 import re
@@ -18,6 +19,15 @@ class SpanishTextPreprocessor:
         except:
             nltk.download('stopwords')
             self.stop_words = set(stopwords.words('spanish'))
+            
+        # spaCy Model Failsafe
+        try:
+            self.nlp = spacy.load("es_core_news_sm")
+        except OSError:
+            # If model is not found, attempt to download it (useful for first-run on Cloud)
+            print("spaCy model 'es_core_news_sm' not found. Downloading...")
+            spacy.cli.download("es_core_news_sm")
+            self.nlp = spacy.load("es_core_news_sm")
             
         # Add comprehensive industries/domain specific Stopwords from notebook
         extra_stopwords = {
