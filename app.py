@@ -1,15 +1,12 @@
-# Professional Streamlit Opinion Intelligence Monitor - app.py (v3.1.0-DEPLOYMENT-FIX)
-
-import streamlit as st
 import pandas as pd
 import os
 import sys
+from datetime import datetime
+import streamlit as st
 
-# Diagnostic Print for Streamlit Cloud Logs
-print("\n>>> STARTING MONITOR INTELLIGENCIA OPINION v3.1.2 (DEPLOYMENT FIXED) <<<")
-
-import os
-import sys
+# Diagnostic Print for Streamlit Cloud Logs (Detecting stale code)
+print(f"\n>>> [BOOT] MONITOR INTELLIGENCIA OPINION v3.1.3 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} <<<")
+print(f">>> sys.path: {sys.path}")
 
 # Ensure the root directory is in sys.path for robust imports on Streamlit Cloud
 root_path = os.path.dirname(os.path.abspath(__file__))
