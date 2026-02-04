@@ -28,7 +28,7 @@ def generate_category_chart(df):
     counts = df['categoria_predom'].value_counts()
     fig, ax = plt.subplots(figsize=(10, 6))
     # Using a professional palette that doesn't conflict with sentiment colors
-    sns.barplot(x=counts.index, y=counts.values, palette='viridis', ax=ax)
+    sns.barplot(x=counts.index, y=counts.values, hue=counts.index, legend=False, palette='viridis', ax=ax)
     ax.set_title("Temas recurrentes en opiniones")
     ax.set_ylabel("Cantidad")
     plt.xticks(rotation=45)
@@ -51,7 +51,7 @@ def generate_word_freq_chart(df):
     
     fig, ax = plt.subplots(figsize=(10, 6))
     # Matching dashboard's Greens scale
-    sns.barplot(data=word_freq, x='Frecuencia', y='Palabra', palette='Greens_r', ax=ax)
+    sns.barplot(data=word_freq, x='Frecuencia', y='Palabra', hue='Palabra', legend=False, palette='Greens_r', ax=ax)
     ax.set_title("Top 20 Palabras Clave")
     return fig
 
@@ -80,7 +80,7 @@ def generate_boxplot_insight(df):
         'negativo': '#ef4444'
     }
     sns.boxplot(data=df, x='sentimiento', y='palabras_limpias', 
-                palette=colors_map, ax=ax)
+                hue='sentimiento', legend=False, palette=colors_map, ax=ax)
     ax.set_title("Longitud de Reseña por Sentimiento")
     return fig
 
