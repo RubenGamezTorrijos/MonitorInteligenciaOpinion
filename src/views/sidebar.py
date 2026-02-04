@@ -50,9 +50,9 @@ def render_sidebar():
         # Action Button (Polymorphic)
         analyze_clicked = False
         if not has_data:
-            analyze_clicked = st.button(ANALYZE_BUTTON, type="primary", use_container_width=True)
+            analyze_clicked = st.button(ANALYZE_BUTTON, type="primary", use_container_width=True) # width="stretch" for newer versions
         else:
-            if st.button("🧹 Nuevo Análisis (Limpiar)", type="secondary", use_container_width=True):
+            if st.button("🧹 Nuevo Análisis (Limpiar)", type="secondary", use_container_width=True): # width="stretch"
                 # Full Reset of analytical state
                 keys_to_clear = [
                     'data_ready', 'df', 'df_comp', 'export_data', 'export_type', 

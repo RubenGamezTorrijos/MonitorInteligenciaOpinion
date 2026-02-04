@@ -131,13 +131,13 @@ def _render_overview_tab(df: pd.DataFrame, df_comp: pd.DataFrame = pd.DataFrame(
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"**{df['domain'].iloc[0]}**")
-            st.plotly_chart(get_cat_fig(df, "", px.colors.qualitative.Prism), use_container_width=True)
+            st.plotly_chart(get_cat_fig(df, "", px.colors.qualitative.Prism), use_container_width=True) # width="stretch"
         with c2:
             st.markdown(f"**{df_comp['domain'].iloc[0]}**")
-            st.plotly_chart(get_cat_fig(df_comp, "", px.colors.qualitative.Pastel), use_container_width=True)
+            st.plotly_chart(get_cat_fig(df_comp, "", px.colors.qualitative.Pastel), use_container_width=True) # width="stretch"
     else:
         fig_cat = get_cat_fig(df, "Temas recurrentes", px.colors.qualitative.Prism)
-        st.plotly_chart(fig_cat, use_container_width=True)
+        st.plotly_chart(fig_cat, use_container_width=True) # width="stretch"
         st.session_state.figures['overview'] = fig_cat
 
     if df_comp.empty:

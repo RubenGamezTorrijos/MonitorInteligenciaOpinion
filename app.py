@@ -4,6 +4,14 @@ import streamlit as st
 import pandas as pd
 import os
 
+import os
+import sys
+
+# Ensure the root directory is in sys.path for robust imports on Streamlit Cloud
+root_path = os.path.dirname(os.path.abspath(__file__))
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
+
 # Internal Imports
 from src.config.constants import APP_TITLE, APP_ICON, DATA_DIR, APP_SUBTITLE_TEMPLATE
 from src.views.styles import apply_custom_styles
