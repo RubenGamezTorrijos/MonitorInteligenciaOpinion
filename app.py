@@ -3,6 +3,10 @@
 import streamlit as st
 import pandas as pd
 import os
+import sys
+
+# Diagnostic Print for Streamlit Cloud Logs
+print("\n>>> STARTING MONITOR INTELLIGENCIA OPINION v3.1.2 (DEPLOYMENT FIXED) <<<")
 
 import os
 import sys
